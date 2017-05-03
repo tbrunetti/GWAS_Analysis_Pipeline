@@ -5,7 +5,7 @@ import os
 
 class Pipeline(BasePipeline):
 	def dependencies(self):
-		return ['pandas', 'fpdf', 'Pillow', 'pypdf2']
+		return ['pandas', 'numpy', 'matplotlib', 'fpdf', 'Pillow', 'pypdf2']
 
 	def description(self):
 		return 'Pipeline made for analyzing GWAS data after QC cleanup'
@@ -14,6 +14,9 @@ class Pipeline(BasePipeline):
 		return {
 			'plink':{
 				'path':'Full path to PLINK executable'
+			},
+			'king':{
+				'path':'Full path to KING executable'
 			}
 		}
 
@@ -32,6 +35,7 @@ class Pipeline(BasePipeline):
 		parser.add_argument('--windowSize', default=50, type=int, help='[default=50] the window size in kb for LD analysis')
 		parser.add_argument('--stepSize', default=5, type=int, help='[default=5] variant count to shift window after each interation')
 		parser.add_argument('--maf', default=0.05, type=float, help='[default=0.05], filter remaining LD pruned variants by MAF')
+	
 	
 	@staticmethod
 	def check_steps(order, start, stop):
@@ -93,12 +97,13 @@ class Pipeline(BasePipeline):
 			outdir = pipeline_args['outDir']+'/'+pipeline_args['projectName'] # new output directory
 			os.mkdir(outdir)
 
-	
-		#step_order = ['hwe', 'LD', 'maf', 'merge', 'ibd' 'GENESIS'] # order of pipeline if full suite is used
-		step_order = ['hwe', 'LD', 'maf', 'merge', 'ibd']
-		# initialize PLINK software
-		general_plink=Software('plink', pipeline_config['plink']['path'])
-		
+
+
+		#step_order = ['hwe', 'LD', 'maf', 'merge', 'ibd', 'KING', 'GENESIS'] # order of pipeline if full suite is used
+		step_order = ['hwe', 'LD', 'maf', 'merge', 'ibd', 'KING']
+		# initialize PLINK and KING software
+		general_plink = Software('plink', pipeline_config['plink']['path'])
+		general_king = Software('king', pipeline_config['king']['path'])
 		# make sure plink input format is correct
 		self.check_plink_format(
 			plinkFile = pipeline_args['inputPLINK'],
@@ -139,7 +144,10 @@ class Pipeline(BasePipeline):
 					
 					total_snps_analyzed_hwe = subprocess.check_output(['wc', '-l',  outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '.bim'])
 					total_snps_passing_hwe = subprocess.check_output(['wc', '-l', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_hweFiltered.bim'])
-					hwe_passing[directories] = [total_snps_analyzed_hwe] + [total_snps_passing_hwe] # store total analyzed and passing for hwe step
+					hwe_passing[directories] = [total_snps_analyzed_hwe.split()[0]] + [total_snps_passing_hwe.split()[0]] # store total analyzed and passing for hwe step
+					hwe_passing[directories] = hwe_passing[directories] + [outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_hweFiltered.hwe']
+				
+				hwe_stats = summary_stats.hwe(dictHWE=hwe_passing, thresh=pipeline_args['hweThresh'], outDir = outdir)
 				
 				step_order.pop(0)
 
@@ -150,46 +158,49 @@ class Pipeline(BasePipeline):
 
 				if pipeline_args['LDmethod'] == 'indep': # gets lists of variants to keep and to prune using VIP
 					for directories in os.listdir(outdir):
-						general_plink.run(
-							Parameter('--bfile', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories + '_hweFiltered'),
-							Parameter('--'+pipeline_args['LDmethod'], str(pipeline_args['windowSize'])+'kb', str(pipeline_args['stepSize']), str(pipeline_args['VIF'])),
-							Parameter('--out', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories)
-							)
-						
-						total_snps_analyzed_ld = subprocess.check_output(['wc', '-l', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories + '_hweFiltered.bim'])
-						total_snps_passing_ld = subprocess.check_output(['wc', '-l', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '.prune.in'])
-						ld_passing[directories] = [total_snps_analyzed_ld] + [total_snps_passing_ld] # store total analyzed and passing for LD pruning step
-						
-						# creates new PLINK files with excluded variants removed
-						general_plink.run(
-							Parameter('--bfile', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories + '_hweFiltered'),
-							Parameter('--exclude', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '.prune.out'),
-							Parameter('--make-bed'),
-							Parameter('--out', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_LDpruned')
-							)
-						
+						if os.path.isdir(os.path.join(outdir, directories)):
+							general_plink.run(
+								Parameter('--bfile', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories + '_hweFiltered'),
+								Parameter('--'+pipeline_args['LDmethod'], str(pipeline_args['windowSize'])+'kb', str(pipeline_args['stepSize']), str(pipeline_args['VIF'])),
+								Parameter('--out', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories)
+								)
+							
+							total_snps_analyzed_ld = subprocess.check_output(['wc', '-l', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories + '_hweFiltered.bim'])
+							total_snps_passing_ld = subprocess.check_output(['wc', '-l', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '.prune.in'])
+							ld_passing[directories] = [total_snps_analyzed_ld.split()[0]] + [total_snps_passing_ld.split()[0]] # store total analyzed and passing for LD pruning step
+							
+							# creates new PLINK files with excluded variants removed
+							general_plink.run(
+								Parameter('--bfile', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories + '_hweFiltered'),
+								Parameter('--exclude', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '.prune.out'),
+								Parameter('--make-bed'),
+								Parameter('--out', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_LDpruned')
+								)
+							
 				
 				else:
 					for directories in os.listdir(outdir): # get lists of variants to keep and to prune using rsq
-						general_plink.run(
-							Parameter('--bfile', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories + '_hweFiltered'),
-							Parameter(pipeline_args['LDmethod'], str(pipeline_args['windowSize'])+'kb', str(pipeline_args['stepSize']), str(pipeline_args['rsq'])),
-							Parameter('--out', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories)
-							)
+						if os.path.isdir(os.path.join(outdir, directories)):
+							general_plink.run(
+								Parameter('--bfile', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories + '_hweFiltered'),
+								Parameter(pipeline_args['LDmethod'], str(pipeline_args['windowSize'])+'kb', str(pipeline_args['stepSize']), str(pipeline_args['rsq'])),
+								Parameter('--out', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories)
+								)
 
-						total_snps_analyzed_ld = subprocess.check_output(['wc', '-l', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories + '_hweFiltered.bim'])
-						total_snps_passing_ld = subprocess.check_output(['wc', '-l', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '.prune.in'])
-						ld_passing[directories] = [total_snps_analyzed_ld] + [total_snps_passing_ld] # store total analyzed and passing for LD pruning step
-						
-						# creates new PLINK files with excluded variants removed
-						general_plink.run(
-							Parameter('--bfile', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories + '_hweFiltered'),
-							Parameter('--exclude', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '.prune.out'),
-							Parameter('--make-bed'),
-							Parameter('--out', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_LDpruned')
-							)
-				
-				
+							total_snps_analyzed_ld = subprocess.check_output(['wc', '-l', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories + '_hweFiltered.bim'])
+							total_snps_passing_ld = subprocess.check_output(['wc', '-l', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '.prune.in'])
+							ld_passing[directories] = [total_snps_analyzed_ld] + [total_snps_passing_ld] # store total analyzed and passing for LD pruning step
+							
+							# creates new PLINK files with excluded variants removed
+							general_plink.run(
+								Parameter('--bfile', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories + '_hweFiltered'),
+								Parameter('--exclude', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '.prune.out'),
+								Parameter('--make-bed'),
+								Parameter('--out', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_LDpruned')
+								)
+					
+				ld_stats = summary_stats.pruning(dictLD=ld_passing)
+					
 				step_order.pop(0)
 
 			# filters pruned variants by MAF
@@ -197,8 +208,8 @@ class Pipeline(BasePipeline):
 				list_of_merge_maf_greater_thresh = open(outdir + '/' + reduced_plink_name + '_greater_mafs.txt', 'w')
 				list_of_merge_maf_less_thresh = open(outdir + '/' + reduced_plink_name + '_small_mafs.txt', 'w')
 				
+				maf_passing = {}
 				for directories in os.listdir(outdir):
-					maf_passing = {}
 					if os.path.isdir(os.path.join(outdir, directories)):
 						
 						# filters out variants below set maf threshold
@@ -210,8 +221,8 @@ class Pipeline(BasePipeline):
 							)
 
 						total_snps_analyzed_maf = subprocess.check_output(['wc', '-l', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_LDpruned.bim'])
-						total_snps_passing_maf = subprocess.check_output(['wc', '-l', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_greater_than_'+str(pipeline_args['maf'])+'_maf.bim'])
-						maf_passing[directories] = [total_snps_analyzed_maf] + [total_snps_passing_maf]
+						total_snps_greater_maf = subprocess.check_output(['wc', '-l', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_greater_than_'+str(pipeline_args['maf'])+'_maf.bim'])
+						maf_passing[directories] = [total_snps_analyzed_maf.split()[0]] + [total_snps_greater_maf.split()[0]]
 
 						# stores name of file for future merging (must be space delimited ordered bed, bim, fam files)
 						list_of_merge_maf_greater_thresh.write(outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_greater_than_'+str(pipeline_args['maf'])+'_maf.bed ' + 
@@ -225,6 +236,11 @@ class Pipeline(BasePipeline):
 							Parameter('--make-bed'),
 							Parameter('--out', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_less_than_or_equal_'+str(pipeline_args['maf'])+'_maf')
 							)
+						
+						total_snps_less_maf = subprocess.check_output(['wc', '-l', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_less_than_or_equal_'+str(pipeline_args['maf'])+'_maf.bim'])
+						maf_passing[directories] = maf_passing[directories] + [total_snps_less_maf.split()[0]]
+	
+
 						# stores name of file for future merging
 						list_of_merge_maf_less_thresh.write(outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_less_than_or_equal_'+str(pipeline_args['maf'])+'_maf.bed ' +
 							outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_less_than_or_equal_'+str(pipeline_args['maf'])+'_maf.bim ' +
@@ -233,6 +249,8 @@ class Pipeline(BasePipeline):
 					
 				list_of_merge_maf_greater_thresh.flush() # push out buffer
 				list_of_merge_maf_less_thresh.flush() # push out buffer
+				
+				maf_stats = summary_stats.minor_allele_freq(dictMAF=maf_passing, thresh=pipeline_args['maf'])
 				
 				step_order.pop(0)
 				
@@ -258,6 +276,13 @@ class Pipeline(BasePipeline):
 					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged')
 					)
 
+				# recalculate freq stats for merged set
+				general_plink.run(
+					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged'),
+					Parameter('--freq'),
+					Parameter('--out', outdir + '/' + reduced_plink_name + '_freq_recalculated_greater_all_merged')
+					)
+
 
 				# merge all ethnic groups together with mafs smaller than threshold
 				first_file_small = ''
@@ -277,6 +302,14 @@ class Pipeline(BasePipeline):
 					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_less_thresh_all_ethnic_groups_merged')
 					)
 
+
+				# recalculate freq stats for merged set
+				general_plink.run(
+					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_less_thresh_all_ethnic_groups_merged'),
+					Parameter('--freq'),
+					Parameter('--out', outdir + '/' + reduced_plink_name + '_freq_recalculated_less_all_merged')
+					)
+
 				step_order.pop(0)
 
 
@@ -287,21 +320,55 @@ class Pipeline(BasePipeline):
 				general_plink.run(
 					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged'),
 					Parameter('--genome'),
+					Parameter('--read-freq', outdir + '/' + reduced_plink_name + '_freq_recalculated_greater_all_merged.frq'),
 					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged')
 					)
 				
 				ibd_results = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged.genome', delim_whitespace=True)
-				relatedness_stats = summary_stats.relatedness(ibd_dataframe = ibd_results)
+				relatedness_stats = summary_stats.relatedness(ibd_dataframe = ibd_results, outDir=outdir)
+
+				step_order.pop(0)
+				'''
+
+				## TO DO: REMOVE DUPLICATE SAMPLE IDs
+				////
+
+				'''
+
+			elif step_order[0] == 'KING':
+			
+				phenoFile_Genesis = open(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged_phenoGENESIS.txt', 'w')
+				# run KING and output file as -b prefix name ending in .kin, .kin0
+				general_king.run(
+					Parameter('-b', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged.bed'),
+					Parameter('--prefix', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged')
+					)
+
+				# generate phenotype table for input into GENESIS analysis  pipeline
+				pheno_Genesis = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
+				pheno_Genesis[['IID', 'AFF']].to_csv(phenoFile_Genesis.name, sep='\t', index=False, header=False) # format it FID <tab> IID <new line>
 
 				step_order.pop(0)
 
-		paramsThresh = summary_stats.parameters_and_threholds(params=pipeline_args)
-		
+
+
+
+
+		#TO DO merge LD pruned 1000 genomes
+
+
+
+
+
+		paramsThresh = summary_stats.parameters_and_thresholds(params=pipeline_args)
+
+
 
 		# output PDFs
 		relatedness_stats.output(outdir + '/' + pipeline_args['projectName'] + '_relatedness.pdf', 'F')
 		paramsThresh.output(outdir + '/' + pipeline_args['projectName'] + '_parameters_and_thresholds.pdf', 'F')
-'''
-			elif step_order[0] == 'GENESIS':
-					step_order.pop(0)
-'''
+		hwe_stats.output(outdir + '/' + pipeline_args['projectName'] + '_hweStats.pdf', 'F')
+		ld_stats.output(outdir + '/' + pipeline_args['projectName'] + '_ldStats.pdf', 'F')
+		maf_stats.output(outdir + '/' + pipeline_args['projectName'] + '_mafStats.pdf', 'F')
+
+			
