@@ -17,6 +17,9 @@ class Pipeline(BasePipeline):
 			},
 			'king':{
 				'path':'Full path to KING executable'
+			},
+			'thousand_genomes':{
+				'path': 'Full path to PLINK BED file format LD pruned phase 3 1000 genomes file'
 			}
 		}
 
@@ -35,8 +38,7 @@ class Pipeline(BasePipeline):
 		parser.add_argument('--windowSize', default=50, type=int, help='[default=50] the window size in kb for LD analysis')
 		parser.add_argument('--stepSize', default=5, type=int, help='[default=5] variant count to shift window after each interation')
 		parser.add_argument('--maf', default=0.05, type=float, help='[default=0.05], filter remaining LD pruned variants by MAF')
-	
-	
+
 	@staticmethod
 	def check_steps(order, start, stop):
 		pass
@@ -86,6 +88,7 @@ class Pipeline(BasePipeline):
 		from fpdf import FPDF
 		import PyPDF2
 
+		
 		reduced_plink_name = pipeline_args['inputPLINK'].split('/')[-1][:-4] #only get plink file name not full absolute path and removes suffix
 		
 		# specifying output location and conflicting project names of files generated	
@@ -96,11 +99,15 @@ class Pipeline(BasePipeline):
 			print "Making new directory called "+str(pipeline_args['projectName']) + ' located in ' + str(pipeline_args['outDir'])
 			outdir = pipeline_args['outDir']+'/'+pipeline_args['projectName'] # new output directory
 			os.mkdir(outdir)
+			self.settings.logger.set(
+				destination=pipeline_args['outDir'] + '/' + pipeline_args['projectName'] +'/stdout.log',
+				destination_stderr=pipeline_args['outDir'] + '/' + pipeline_args['projectName'] + '/stderr.log')
+
 
 
 
 		#step_order = ['hwe', 'LD', 'maf', 'merge', 'ibd', 'KING', 'GENESIS'] # order of pipeline if full suite is used
-		step_order = ['hwe', 'LD', 'maf', 'merge', 'ibd', 'KING']
+		step_order = ['hwe', 'LD', 'maf', 'merge', 'ibd', 'KING', 'PCA']
 		# initialize PLINK and KING software
 		general_plink = Software('plink', pipeline_config['plink']['path'])
 		general_king = Software('king', pipeline_config['king']['path'])
@@ -131,21 +138,24 @@ class Pipeline(BasePipeline):
 			
 			# hardy-weinberg equilibrium filtering
 			if step_order[0] == 'hwe':
+				print "running HWE step"
 				hwe_passing = {}
 				for directories in os.listdir(outdir):
-					general_plink.run(
-						Parameter('--bfile', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories),
-						Parameter('--hardy'),
-						Parameter('--hwe', pipeline_args['hweThresh']),
-						Parameter('midp'),
-						Parameter('--make-bed'),
-						Parameter('--out', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_hweFiltered')
-						)
-					
-					total_snps_analyzed_hwe = subprocess.check_output(['wc', '-l',  outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '.bim'])
-					total_snps_passing_hwe = subprocess.check_output(['wc', '-l', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_hweFiltered.bim'])
-					hwe_passing[directories] = [total_snps_analyzed_hwe.split()[0]] + [total_snps_passing_hwe.split()[0]] # store total analyzed and passing for hwe step
-					hwe_passing[directories] = hwe_passing[directories] + [outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_hweFiltered.hwe']
+					if os.path.isdir(os.path.join(outdir, directories)):
+
+						general_plink.run(
+							Parameter('--bfile', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories),
+							Parameter('--hardy'),
+							Parameter('--hwe', pipeline_args['hweThresh']),
+							Parameter('midp'),
+							Parameter('--make-bed'),
+							Parameter('--out', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_hweFiltered')
+							)
+						
+						total_snps_analyzed_hwe = subprocess.check_output(['wc', '-l',  outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '.bim'])
+						total_snps_passing_hwe = subprocess.check_output(['wc', '-l', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_hweFiltered.bim'])
+						hwe_passing[directories] = [total_snps_analyzed_hwe.split()[0]] + [total_snps_passing_hwe.split()[0]] # store total analyzed and passing for hwe step
+						hwe_passing[directories] = hwe_passing[directories] + [outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_hweFiltered.hwe']
 				
 				hwe_stats = summary_stats.hwe(dictHWE=hwe_passing, thresh=pipeline_args['hweThresh'], outDir = outdir)
 				
@@ -154,6 +164,7 @@ class Pipeline(BasePipeline):
 			
 			# LD pruning
 			elif step_order[0] == 'LD':
+				print "running LD pruning step"
 				ld_passing = {}
 
 				if pipeline_args['LDmethod'] == 'indep': # gets lists of variants to keep and to prune using VIP
@@ -205,6 +216,7 @@ class Pipeline(BasePipeline):
 
 			# filters pruned variants by MAF
 			elif step_order[0] == 'maf':
+				print "running maf step"
 				list_of_merge_maf_greater_thresh = open(outdir + '/' + reduced_plink_name + '_greater_mafs.txt', 'w')
 				list_of_merge_maf_less_thresh = open(outdir + '/' + reduced_plink_name + '_small_mafs.txt', 'w')
 				
@@ -259,6 +271,7 @@ class Pipeline(BasePipeline):
 			# merge all sets of data together
 			elif step_order[0] == 'merge':
 				# merge all ethnic groups together with mafs greater than threshold
+				print "merging all files"
 				first_file_large = ''
 				with open(list_of_merge_maf_greater_thresh.name, 'r') as base_file:
 					remainder = base_file.read().splitlines(True)
@@ -317,6 +330,7 @@ class Pipeline(BasePipeline):
 			# DUPLICATES MUST BE REMOVED BEFORE USING GENESIS PIPELINE!
 			elif step_order[0] == 'ibd':
 				# only gets run on the bed file with MAF > specified tresh
+				print "running PLINK ibd step"
 				general_plink.run(
 					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged'),
 					Parameter('--genome'),
@@ -336,7 +350,8 @@ class Pipeline(BasePipeline):
 				'''
 
 			elif step_order[0] == 'KING':
-			
+				
+				print "running KING step"
 				phenoFile_Genesis = open(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged_phenoGENESIS.txt', 'w')
 				# run KING and output file as -b prefix name ending in .kin, .kin0
 				general_king.run(
@@ -351,17 +366,14 @@ class Pipeline(BasePipeline):
 				step_order.pop(0)
 
 
+			elif step_order[0] == 'PCA':
+				#TO DO merge LD pruned 1000 genomes
+				print "running PCA step"
+				subprocess.call(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged', phenoFile_Genesis.name])
 
 
-
-		#TO DO merge LD pruned 1000 genomes
-
-
-
-
-
+		print "writing results to PDF"
 		paramsThresh = summary_stats.parameters_and_thresholds(params=pipeline_args)
-
 
 
 		# output PDFs
