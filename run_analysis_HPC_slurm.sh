@@ -9,6 +9,14 @@
 
 eval "#SBATCH --account=TICR=${USER}"
 
-cd /gpfs/share/TICR/TICR_Analysis_Pipeline_Prototyping/myVirtENV 
-source bin/activate
+module load <python location>
+module load <R location>
+module load torque
 
+cd <into your virtual environment>
+source bin/activate
+cd <into cloned repository>
+
+
+
+chunky run run_GWAS_analysis_pipeline.py <insert all parameters and arguments here>
