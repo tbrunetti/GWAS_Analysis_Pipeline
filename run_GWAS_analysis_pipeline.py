@@ -5,7 +5,7 @@ import os
 
 class Pipeline(BasePipeline):
 	def dependencies(self):
-		return ['pandas', 'numpy', 'matplotlib', 'fpdf', 'Pillow', 'pypdf2']
+		return ['pandas', 'numpy', 'matplotlib', 'fpdf', 'Pillow', 'pypdf2', 'statistics']
 
 	def description(self):
 		return 'Pipeline made for analyzing GWAS data after QC cleanup'
@@ -27,6 +27,7 @@ class Pipeline(BasePipeline):
 		# should other input options be available??
 		parser.add_argument('-inputPLINK', required=True, type=str, help='Full path to PLINK file ending in .BED or .PED')
 		parser.add_argument('-phenoFile', required=True, type=str, help='Full path to phenotype file, see argument readme for more details on format')
+		parser.add_argument('--sampleRemoval', default=None, help='Full path for samples to remove before analysis (i.e. those with sex discrepenences, poor QC, etc...) see readme for more details on format')
 		parser.add_argument('--outDir', default=os.getcwd(), type=str, help='[default=current working directory] Full path of existing directory to output results')
 		parser.add_argument('--projectName', default=str(datetime.datetime.now()), type=str, help='[default=date time stamp] Name of project')
 		parser.add_argument('--startStep', default='hwe', type=str, help='The part of the pipeline you would like to start with')
@@ -59,7 +60,7 @@ class Pipeline(BasePipeline):
 
 	# creates files to input into plink for samples to keep
 	@staticmethod
-	def ethnic_plinks_lists(phenotype, plinkFileName, outDir):
+	def ethnic_plinks_lists(phenotype, plinkFileName, removeSamples, outDir):
 		import pandas as pd
 
 		phenotype_table = pd.read_table(phenotype)
@@ -70,7 +71,19 @@ class Pipeline(BasePipeline):
 		for ethnic_group in race_subsets_cleaned:
 			os.mkdir(outDir + '/' + '_'.join(ethnic_group.split()))
 			keep_file = open(outDir + '/' + '_'.join(ethnic_group.split()) + '/' + plinkFileName +'_'+str('_'.join(ethnic_group.split())) + '_keepIDs.txt', 'w')
-			subset_by_race = phenotype_table.loc[phenotype_table['Race'] == ethnic_group]
+			
+			if removeSamples != None:
+				removeSamples_dataframe = pd.read_table(removeSamples, delim_whitespace=True, names=['FID', 'IID'])
+				# get a list of sample IDs to remove
+				sampleIDs_remove = list(removeSamples_dataframe['IID'])
+				subset_by_race_only = phenotype_table.loc[(phenotype_table['Race'] == ethnic_group) & (pd.isnull(phenotype_table['FID'].str.strip()) == False)]
+				# need to check for last part of conditional in case FID is missing, remove the row...causes problems with PLINK
+				subset_by_race = subset_by_race_only[(subset_by_race_only['IID'].isin(sampleIDs_remove) == False)]
+				
+			else:
+				# need to check for last part of conditional in case FID is missing, remove the row...causes problems with PLINK
+				subset_by_race = phenotype_table.loc[(phenotype_table['Race'] == ethnic_group) & (pd.isnull(phenotype_table['FID'].str.strip()) == False)]
+
 			subset_by_race[['FID', 'IID']].to_csv(keep_file.name, sep='\t', index=False, header=False) # format it FID <tab> IID <new line>
 			make_plinks['_'.join(ethnic_group.split())]=keep_file.name
 			keep_file.flush()
@@ -99,9 +112,9 @@ class Pipeline(BasePipeline):
 			print "Making new directory called "+str(pipeline_args['projectName']) + ' located in ' + str(pipeline_args['outDir'])
 			outdir = pipeline_args['outDir']+'/'+pipeline_args['projectName'] # new output directory
 			os.mkdir(outdir)
-			self.settings.logger.set(
-				destination=pipeline_args['outDir'] + '/' + pipeline_args['projectName'] +'/stdout.log',
-				destination_stderr=pipeline_args['outDir'] + '/' + pipeline_args['projectName'] + '/stderr.log')
+			#self.settings.logger.set(
+			#	destination=pipeline_args['outDir'] + '/' + pipeline_args['projectName'] +'/stdout.log',
+			#	destination_stderr=pipeline_args['outDir'] + '/' + pipeline_args['projectName'] + '/stderr.log')
 
 
 
@@ -120,15 +133,17 @@ class Pipeline(BasePipeline):
 		keep_files = self.ethnic_plinks_lists(
 			phenotype = pipeline_args['phenoFile'],
 			plinkFileName = reduced_plink_name,
+			removeSamples = pipeline_args['sampleRemoval'],
 			outDir = outdir
 			)
 
 
-		# will make separate plink files for each ethnic group
+		# will make separate plink files for each ethnic group and use autosomes only
 		for key, value in keep_files.iteritems():
 			general_plink.run(
 				Parameter('--bfile', pipeline_args['inputPLINK'][:-4]),
 				Parameter('--keep', value),
+				Parameter('--autosome'),
 				Parameter('--make-bed'),
 				Parameter('--out', outdir + '/' + str(key) + '/' + reduced_plink_name + '_' + str(key))
 				)
@@ -158,7 +173,7 @@ class Pipeline(BasePipeline):
 						hwe_passing[directories] = hwe_passing[directories] + [outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_hweFiltered.hwe']
 				
 				hwe_stats = summary_stats.hwe(dictHWE=hwe_passing, thresh=pipeline_args['hweThresh'], outDir = outdir)
-				
+			
 				step_order.pop(0)
 
 			
@@ -370,6 +385,7 @@ class Pipeline(BasePipeline):
 				#TO DO merge LD pruned 1000 genomes
 				print "running PCA step"
 				subprocess.call(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged', phenoFile_Genesis.name])
+				step_order.pop(0)
 
 
 		print "writing results to PDF"
