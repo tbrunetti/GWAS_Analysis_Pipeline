@@ -1,5 +1,9 @@
 # GWAS_Analysis_Pipeline
+An automated pipeline to analyze GWAS data after initial round of QC/filtering has been performed.
 
+<p align="center">
+<img src="https://github.com/tbrunetti/GWAS_Analysis_Pipeline/blob/master/how_to_run_flowchat.png" />
+</p>
 
 
 ## Running Pipeline on HPC or without sudo privileges
