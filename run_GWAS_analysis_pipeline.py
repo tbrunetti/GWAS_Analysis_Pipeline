@@ -20,6 +20,9 @@ class Pipeline(BasePipeline):
 			},
 			'thousand_genomes':{
 				'path': 'Full path to PLINK BED file format LD pruned phase 3 1000 genomes file'
+			},
+			'R_libraries':{
+				'path': 'Full path to directory where R libraries are stored'
 			}
 		}
 
@@ -39,6 +42,7 @@ class Pipeline(BasePipeline):
 		parser.add_argument('--windowSize', default=50, type=int, help='[default=50] the window size in kb for LD analysis')
 		parser.add_argument('--stepSize', default=5, type=int, help='[default=5] variant count to shift window after each interation')
 		parser.add_argument('--maf', default=0.05, type=float, help='[default=0.05], filter remaining LD pruned variants by MAF')
+		parser.add_argument('--hetThresh', default=0.10, type=float, help='[default=0.10], filter out samples where inbreeding coefficient is greater than threshold (heterozygosity filtering)')
 
 	@staticmethod
 	def check_steps(order, start, stop):
@@ -119,8 +123,8 @@ class Pipeline(BasePipeline):
 
 
 
-		#step_order = ['hwe', 'LD', 'maf', 'merge', 'ibd', 'KING', 'GENESIS'] # order of pipeline if full suite is used
-		step_order = ['hwe', 'LD', 'maf', 'merge', 'ibd', 'KING', 'PCA']
+		#step_order = ['hwe', 'LD', 'maf', 'merge', 'het', ibd', 'KING', 'PCA'] # order of pipeline if full suite is used
+		step_order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', 'KING']
 		# initialize PLINK and KING software
 		general_plink = Software('plink', pipeline_config['plink']['path'])
 		general_king = Software('king', pipeline_config['king']['path'])
@@ -282,7 +286,7 @@ class Pipeline(BasePipeline):
 				step_order.pop(0)
 				
 		
-				
+
 			# merge all sets of data together
 			elif step_order[0] == 'merge':
 				# merge all ethnic groups together with mafs greater than threshold
@@ -300,7 +304,7 @@ class Pipeline(BasePipeline):
 				general_plink.run(
 					Parameter('--bfile', prefixFirstLarge),
 					Parameter('--merge-list', list_of_merge_maf_greater_thresh.name),
-					Parameter('-make-bed'),
+					Parameter('--make-bed'),
 					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged')
 					)
 
@@ -326,7 +330,7 @@ class Pipeline(BasePipeline):
 				general_plink.run(
 					Parameter('--bfile', prefixFirstSmall),
 					Parameter('--merge-list', list_of_merge_maf_less_thresh.name),
-					Parameter('-make-bed'),
+					Parameter('--make-bed'),
 					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_less_thresh_all_ethnic_groups_merged')
 					)
 
@@ -341,53 +345,76 @@ class Pipeline(BasePipeline):
 				step_order.pop(0)
 
 
+			elif step_order[0] == 'het':
+				print "checking heterozygosity"
+				general_plink.run(
+					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged'),
+					Parameter('--het'),
+					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged')
+					)
+
+
+				het_dataframe = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged.het', delim_whitespace=True)
+				samples_failing_het, het_pdf = summary_stats.heterozygosity(het_dataframe = het_dataframe, thresh = pipeline_args['hetThresh'], outDir = outdir)
+				
+				general_plink.run(
+					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged'),
+					Parameter('--remove', samples_failing_het),
+					Parameter('--make-bed'),
+					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged')
+					)
+				
+				step_order.pop(0)
+				
+
+
 			# determine the pairwise relationship of all merged samples
 			# DUPLICATES MUST BE REMOVED BEFORE USING GENESIS PIPELINE!
 			elif step_order[0] == 'ibd':
 				# only gets run on the bed file with MAF > specified tresh
 				print "running PLINK ibd step"
 				general_plink.run(
-					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged'),
+					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged'),
 					Parameter('--genome'),
 					Parameter('--read-freq', outdir + '/' + reduced_plink_name + '_freq_recalculated_greater_all_merged.frq'),
-					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged')
+					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged')
 					)
 				
-				ibd_results = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged.genome', delim_whitespace=True)
+				ibd_results = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged.genome', delim_whitespace=True)
 				relatedness_stats = summary_stats.relatedness(ibd_dataframe = ibd_results, outDir=outdir)
 
 				step_order.pop(0)
-				'''
+				
 
 				## TO DO: REMOVE DUPLICATE SAMPLE IDs
-				////
-
-				'''
+	
 
 			elif step_order[0] == 'KING':
 				
 				print "running KING step"
-				phenoFile_Genesis = open(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged_phenoGENESIS.txt', 'w')
+				phenoFile_Genesis = open(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_phenoGENESIS.txt', 'w')
 				# run KING and output file as -b prefix name ending in .kin, .kin0
 				general_king.run(
-					Parameter('-b', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged.bed'),
-					Parameter('--prefix', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged')
+					Parameter('-b', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged.bed'),
+					Parameter('--prefix', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged')
 					)
 
 				# generate phenotype table for input into GENESIS analysis  pipeline
-				pheno_Genesis = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
+				pheno_Genesis = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
 				pheno_Genesis[['IID', 'AFF']].to_csv(phenoFile_Genesis.name, sep='\t', index=False, header=False) # format it FID <tab> IID <new line>
 
 				step_order.pop(0)
 
-
+		'''
 			elif step_order[0] == 'PCA':
 				#TO DO merge LD pruned 1000 genomes
 				print "running PCA step"
-				subprocess.call(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged', phenoFile_Genesis.name])
+				subprocess.call(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged', phenoFile_Genesis.name])
+				
 				step_order.pop(0)
 
 
+		'''	
 		print "writing results to PDF"
 		paramsThresh = summary_stats.parameters_and_thresholds(params=pipeline_args)
 
@@ -398,5 +425,5 @@ class Pipeline(BasePipeline):
 		hwe_stats.output(outdir + '/' + pipeline_args['projectName'] + '_hweStats.pdf', 'F')
 		ld_stats.output(outdir + '/' + pipeline_args['projectName'] + '_ldStats.pdf', 'F')
 		maf_stats.output(outdir + '/' + pipeline_args['projectName'] + '_mafStats.pdf', 'F')
-
+		het_pdf.output(outdir + '/' + pipeline_args['projectName'] + '_hetStats.pdf', 'F')
 			
