@@ -33,4 +33,5 @@ pheno <- pheno - 1
 scanAnnot <- ScanAnnotationDataFrame(data.frame(scanID = mypcrel$sample.id,pc1 = mypcair$vectors[,1],pc8 = mypcair$vectors[,8], pheno = pheno))
 covMatList <- list("Kin" = pcrelateMakeGRM(mypcrel))
 
-save(scanAnnot, covMatList, mypcair, file = paste(filePrefix, '_GENESIS.txt', sep=""))
+# creates a binary file -- can open in R with load()
+save(scanAnnot, covMatList, mypcair, file = paste(filePrefix, '_GENESIS', sep=""))
