@@ -192,8 +192,7 @@ def relatedness(ibd_dataframe, outDir):
 	duplicates = ibd_dataframe.loc[ibd_dataframe['Z2'] > 0.97]
 	parent_offspring = ibd_dataframe.loc[(ibd_dataframe['Z1'] > 0.97) & (ibd_dataframe['Z0'] < 0.05) & (ibd_dataframe['Z2'] < 0.05)]
 	full_sibs = ibd_dataframe.loc[(ibd_dataframe['Z0'] < 0.40) & (ibd_dataframe['Z2'] > 0.16)]
-	half_sibs = ibd_dataframe.loc[(ibd_dataframe['Z0'] < 0.60) & (ibd_dataframe['Z1'] < 0.58) & (ibd_dataframe['Z2'] < 0.05)]
-	cousins = ibd_dataframe.loc[(ibd_dataframe['Z0'] > 0.60) & (ibd_dataframe['Z1'] < 0.40) & (ibd_dataframe['Z2'] < 0.02)]
+	second_degree = ibd_dataframe.loc[(ibd_dataframe['Z0'] < 0.60) & (ibd_dataframe['Z1'] < 0.58) & (ibd_dataframe['Z2'] < 0.05)]
 	unrelated = ibd_dataframe.loc[ibd_dataframe['Z0'] > 0.78]
 	
 	pdf.set_font('Arial', '', 16)
@@ -204,9 +203,7 @@ def relatedness(ibd_dataframe, outDir):
 	pdf.set_x(30)
 	pdf.multi_cell(0, 10, '# of full siblings pairs:  '+str(len(full_sibs.index)), 1, 1, 'L')
 	pdf.set_x(30)
-	pdf.multi_cell(0, 10, '# of half sibling pairs:  '+str(len(half_sibs.index)), 1, 1, 'L')
-	pdf.set_x(30)
-	pdf.multi_cell(0, 10, '# of cousin pairs:  '+str(len(cousins.index)), 1, 1, 'L')
+	pdf.multi_cell(0, 10, '# of 2nd degree pairs:  '+str(len(second_degree.index)), 1, 1, 'L')
 	pdf.set_x(30)
 	pdf.multi_cell(0, 10, '# of unrelated pairs:  '+str(len(unrelated.index)), 1, 1, 'L')
 
