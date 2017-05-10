@@ -33,6 +33,9 @@ The following list of Python libraries are required but the pipeline can automat
 
 ## User Generated File Requirements
 -----------------------------------
+There are two files that are minimally required in order to run the pipeline:
+* Input PLINK file either in .bed or .ped format
+* Populated sample_sheet_template.xlsx  
 
 
 ## Installing and Running Pipeline on HPC or without sudo privileges
