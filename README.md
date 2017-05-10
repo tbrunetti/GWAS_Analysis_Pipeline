@@ -13,7 +13,7 @@ An automated pipeline to analyze GWAS data after initial round of QC/filtering h
 ------------------------
 The following are the minimum software requirements:
 * Python version 2.7 (https://www.python.org/)
-* R version 3.2 or better (https://www.cog-genomics.org/plink2)
+* R version 3.2 or better (https://cran.r-project.org/)
 * PLINK version 1.9 or better (https://www.cog-genomics.org/plink2)
 * KING software package (http://people.virginia.edu/~wc9c/KING/manual.html)
 * chunkypipes (http://chunky-pipes.readthedocs.io/en/stable/getting_started.html)
