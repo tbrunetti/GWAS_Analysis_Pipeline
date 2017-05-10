@@ -17,12 +17,12 @@ For users running the pipeline on a HPC system or without administrative privile
 
 1.  Download and Install virtualenv
 ------------------------------------
-For the full documentation of of virtualenv please refer to the following website:  https://virtualenv.pypa.io/en/stable/installation/  By typing in the following commands below, this will download virtualenv from the Web and create a virtual environment call myVE under the virtualenv-X.X directory.  The name myVE can be changed to any full path file name of your choosing.
+For the full documentation of of virtualenv please refer to the following website:  https://virtualenv.pypa.io/en/stable/installation/  By typing in the following commands below, this will download virtualenv from the Web and create a virtual environment call myVE under the virtualenv-15.0.0 directory.  The name myVE can be changed to any full path file name of your choosing.
 
 ```
-$ curl -O https://pypi.python.org/packages/source/v/virtualenv/virtualenv-X.X.tar.gz
-$ tar xvfz virtualenv-X.X.tar.gz
-$ cd virtualenv-X.X
+$ curl -O https://pypi.python.org/packages/source/v/virtualenv/virtualenv-15.0.0.tar.gz
+$ tar xvfz virtualenv-15.0.0.tar.gz
+$ cd virtualenv-15.0.0
 $ python virtualenv.py myVE
 ```
 Now you have created a virtual environment call myVE in the directory virtualenv-X.X.  Next you need to activate the environment.  In order to activate your virutal environment type in the commmand below:
