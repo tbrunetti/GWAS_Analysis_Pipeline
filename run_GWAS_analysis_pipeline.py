@@ -5,7 +5,7 @@ import os
 
 class Pipeline(BasePipeline):
 	def dependencies(self):
-		return ['pandas', 'numpy', 'matplotlib', 'fpdf', 'Pillow', 'pypdf2', 'statistics']
+		return ['pandas', 'numpy', 'matplotlib', 'fpdf', 'Pillow', 'pypdf2', 'statistics', 'xlrd']
 
 	def description(self):
 		return 'Pipeline made for analyzing GWAS data after QC cleanup'
