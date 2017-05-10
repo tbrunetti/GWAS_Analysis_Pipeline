@@ -19,7 +19,7 @@ The following are the minimum software requirements:
 * chunkypipes (http://chunky-pipes.readthedocs.io/en/stable/getting_started.html)
 * virtualenv -- ONLY required if admin rights are not granted (https://virtualenv.pypa.io/en/stable/) 
 
-__*--Software Requirements that can be installed automatically*__
+__*--Software Requirements that can be installed automatically--*__  
 The following list of Python libraries are required but the pipeline can automatically install them if pip is available:
   * SciPy stack, in particular the following packages: (https://scipy.org/)
     * pandas
