@@ -43,6 +43,7 @@ class Pipeline(BasePipeline):
 		parser.add_argument('--stepSize', default=5, type=int, help='[default=5] variant count to shift window after each interation')
 		parser.add_argument('--maf', default=0.05, type=float, help='[default=0.05], filter remaining LD pruned variants by MAF')
 		parser.add_argument('--hetThresh', default=0.10, type=float, help='[default=0.10], filter out samples where inbreeding coefficient is greater than threshold (heterozygosity filtering)')
+		parser.add_argument('--reanalyze', action='store_true', help='by adding this flag, it means you are going to pass a dataset through the pipeline that has already been partially/fully analyzed by this pipeline. WARNING! May over write exisiting data!!')
 
 	@staticmethod
 	def check_steps(order, start, stop):
@@ -64,11 +65,21 @@ class Pipeline(BasePipeline):
 
 	# creates files to input into plink for samples to keep
 	@staticmethod
-	def ethnic_plinks_lists(phenotype, plinkFileName, removeSamples, outDir):
+	def ethnic_plinks_lists(phenotype, plinkFileName, famFile, removeSamples, outDir):
 		import pandas as pd
 
-		phenotype_table = pd.read_table(phenotype)
-		race_subsets = list(set(list(phenotype_table['Race']))) # gets all racial groups listed in phenotype file
+		phenotype_table = pd.read_excel(phenotype, sheetname="Sheet2", header=0, converters={'FID':str, 'IID':str}) 
+		phenotype_table['IID'] = phenotype_table['IID'].str.strip() # remove whitespace for proper merging
+		phenotype_table['FID'] = phenotype_table['FID'].str.strip() # remove whitespace for proper merging
+		
+		# update fam file with phenotype information
+		original_fam = pd.read_table(famFile, delim_whitespace=True, names = ['FID', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'], converters={'FID':str, 'IID':str, 'Gender':str}) 
+		original_fam['IID'] = original_fam['IID'].str.strip() # remove whitespace for proper merging
+		original_fam['FID'] = original_fam['FID'].str.strip() # remove whitespace for proper merging
+
+		merged_dataframe = original_fam.merge(phenotype_table, how='left', on=['FID', 'IID']) # only merge information where FID and IID are available in the original fam file
+
+		race_subsets = list(set(list(merged_dataframe['Race']))) # gets all racial groups listed in phenotype file
 		race_subsets_cleaned = [i for i in race_subsets if str(i)!='nan'] # removes samples that do not have a race listed 
 		make_plinks = {} # stores file name of samples to keep for each group
 		
@@ -80,15 +91,16 @@ class Pipeline(BasePipeline):
 				removeSamples_dataframe = pd.read_table(removeSamples, delim_whitespace=True, names=['FID', 'IID'])
 				# get a list of sample IDs to remove
 				sampleIDs_remove = list(removeSamples_dataframe['IID'])
-				subset_by_race_only = phenotype_table.loc[(phenotype_table['Race'] == ethnic_group) & (pd.isnull(phenotype_table['FID'].str.strip()) == False)]
+				subset_by_race_only = merged_dataframe.loc[(merged_dataframe['Race'] == ethnic_group) & (pd.isnull(merged_dataframe['FID'].str.strip()) == False)]
 				# need to check for last part of conditional in case FID is missing, remove the row...causes problems with PLINK
 				subset_by_race = subset_by_race_only[(subset_by_race_only['IID'].isin(sampleIDs_remove) == False)]
 				
 			else:
 				# need to check for last part of conditional in case FID is missing, remove the row...causes problems with PLINK
-				subset_by_race = phenotype_table.loc[(phenotype_table['Race'] == ethnic_group) & (pd.isnull(phenotype_table['FID'].str.strip()) == False)]
+				subset_by_race = merged_dataframe.loc[(merged_dataframe['Race'] == ethnic_group) & (pd.isnull(merged_dataframe['FID'].str.strip()) == False)]
 
 			subset_by_race[['FID', 'IID']].to_csv(keep_file.name, sep='\t', index=False, header=False) # format it FID <tab> IID <new line>
+			merged_dataframe[['FID', 'IID', 'PAT', 'MAT', 'Gender', 'Phenotype']].to_csv(famFile, sep=' ', index=False, header=False)
 			make_plinks['_'.join(ethnic_group.split())]=keep_file.name
 			keep_file.flush()
 			keep_file.close()
@@ -124,7 +136,7 @@ class Pipeline(BasePipeline):
 
 
 		#step_order = ['hwe', 'LD', 'maf', 'merge', 'het', ibd', 'KING', 'PCA'] # order of pipeline if full suite is used
-		step_order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', 'KING']
+		step_order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', 'KING', 'PCA']
 		# initialize PLINK and KING software
 		general_plink = Software('plink', pipeline_config['plink']['path'])
 		general_king = Software('king', pipeline_config['king']['path'])
@@ -137,6 +149,7 @@ class Pipeline(BasePipeline):
 		keep_files = self.ethnic_plinks_lists(
 			phenotype = pipeline_args['phenoFile'],
 			plinkFileName = reduced_plink_name,
+			famFile = pipeline_args['inputPLINK'][:-4] + '.fam',
 			removeSamples = pipeline_args['sampleRemoval'],
 			outDir = outdir
 			)
@@ -405,7 +418,7 @@ class Pipeline(BasePipeline):
 
 				step_order.pop(0)
 
-		'''
+
 			elif step_order[0] == 'PCA':
 				#TO DO merge LD pruned 1000 genomes
 				print "running PCA step"
@@ -414,16 +427,15 @@ class Pipeline(BasePipeline):
 				step_order.pop(0)
 
 
-		'''	
 		print "writing results to PDF"
 		paramsThresh = summary_stats.parameters_and_thresholds(params=pipeline_args)
 
 
-		# output PDFs
+		# output PDFsS
 		relatedness_stats.output(outdir + '/' + pipeline_args['projectName'] + '_relatedness.pdf', 'F')
 		paramsThresh.output(outdir + '/' + pipeline_args['projectName'] + '_parameters_and_thresholds.pdf', 'F')
 		hwe_stats.output(outdir + '/' + pipeline_args['projectName'] + '_hweStats.pdf', 'F')
 		ld_stats.output(outdir + '/' + pipeline_args['projectName'] + '_ldStats.pdf', 'F')
 		maf_stats.output(outdir + '/' + pipeline_args['projectName'] + '_mafStats.pdf', 'F')
 		het_pdf.output(outdir + '/' + pipeline_args['projectName'] + '_hetStats.pdf', 'F')
-			
+		
