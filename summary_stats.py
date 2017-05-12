@@ -1,5 +1,7 @@
 import pandas as pd
 import statistics as stats
+import matplotlib as mpl
+mpl.use('Agg') # bypass X11 if using server where X11 is not supported
 import matplotlib.pyplot as plt
 import numpy as np
 
