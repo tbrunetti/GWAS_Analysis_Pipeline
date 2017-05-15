@@ -41,7 +41,9 @@ There are two files that are minimally required in order to run the pipeline:
 ## Installing and Running Pipeline on HPC or without sudo privileges
 ---------------------------------------------------------------------
 1. Install, Create, Activate Virutal Environment
-2. Clone Repository
+2. Clone Repository (only needs to be done once)
+3. Activate chunkypipes, configure and install pipeline (only needs to be performed once)
+4. Run pipeline
 
 ### Installation, Creation, and Activation of Virtual Environment (installAtion and creation only needs to ever be done once)
 ------------------------------------------------------------------------------------------------------------------------------
@@ -71,7 +73,7 @@ Now anytime you would like to work in the virutal environment make you use
 ```
 $ source bin/activate
 ```
-and see the parenthesis and it is all set up!  Note, however, although you every only need to install the virtual environment once, each time you log back into your system you will need to activate the environment if you want to use it.  Inorder to logout or deactivate the virtual environment just type the following into your command prompt:
+and see the parenthesis and it is all set up!  Note, however, although you every only need to install the virtual environment once, each time you log back into your system you will need to activate the environment if you want to use it.  In order to logout or deactivate the virtual environment just type the following into your command prompt:
 ```
 $ deactivate
 ```
@@ -85,7 +87,9 @@ It is also **critical** on HPC systems to load the python module **PRIOR TO ACTI
 
 ## Installing and Running Pipeline with on personal system with sudo privileges
 -------------------------------------------------------------------------------
-1. Clone Repository
+1. Clone Repository (only needs to be done once)
+2. Activate chunkypipes, configure and install pipeline (only need to be performed once)
+3. Run pipeline
 
 ##  Output and Deliverables
 ---------------------------
