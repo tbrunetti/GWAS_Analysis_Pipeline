@@ -176,7 +176,9 @@ def heterozygosity(het_dataframe, thresh, outDir):
 
 def relatedness(ibd_dataframe, outDir):
 	
-	dups_text = open(outDir + '/' + 'duplicate_pairs.txt', 'w')
+	dups_text = open(outDir + '/' + 'duplicate_pairs.txt', 'w') # outputs pairs with Z0, Z1, Z2	score
+	remove_dups = open(outDir + '/remove_all_duplicate_pairs.txt', 'w') # outputs duplicate samples for PLINK format removal
+	
 	pdf = FPDF() # create new PDF
 	pdf.add_page()
 	pdf.set_margins(20, 10, 20)
@@ -197,6 +199,16 @@ def relatedness(ibd_dataframe, outDir):
 	second_degree = ibd_dataframe.loc[(ibd_dataframe['Z0'] < 0.60) & (ibd_dataframe['Z1'] < 0.58) & (ibd_dataframe['Z2'] < 0.05)]
 	unrelated = ibd_dataframe.loc[ibd_dataframe['Z0'] > 0.78]
 	
+	# format data so it can be put into usable format by PLINK --remove
+	first_in_pair = duplicates[['FID1', 'IID1']]
+	second_in_pair = duplicates[['FID2', 'IID2']]
+	first_in_pair.columns = ['FID', 'IID']
+	second_in_pair.columns = ['FID', 'IID']
+	merged_removals = first_in_pair.merge(second_in_pair, by=['FID', 'IID'])
+	print merged_removals[['FID', 'IID']]
+	merged_removals[['FID', 'IID']].to_csv(remove_dups.name, sep='\t', index=False, header=False) # output file created to PLINK --remove
+
+
 	pdf.set_font('Arial', '', 16)
 	pdf.set_x(30)
 	pdf.multi_cell(0, 10, '# of duplicate pairs:  '+str(len(duplicates.index)), 1, 1, 'L')
@@ -212,5 +224,5 @@ def relatedness(ibd_dataframe, outDir):
 
 	duplicates.to_csv(dups_text.name, sep='\t', index=False)
 
-	return pdf
+	return pdf, remove_dups.name
 
