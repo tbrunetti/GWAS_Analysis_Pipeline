@@ -457,7 +457,6 @@ class Pipeline(BasePipeline):
 			# previous step
 			elif step_order[0] == 'GENanalysis':
 				final_results_merge = open(outdir +'/final_results_merged.txt', 'a+')
-				pass;
 				# run a shell script which will submit slurm script
 				subprocess.call(['./export_var_slurm_streamlined.sh', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen'])
 				# concatenate all results together with only one line of header
