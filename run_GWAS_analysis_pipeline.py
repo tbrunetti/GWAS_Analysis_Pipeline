@@ -126,6 +126,7 @@ class Pipeline(BasePipeline):
 		# specifying output location and conflicting project names of files generated	
 		try:
 			if pipeline_args['reanalyze'] == True:
+				outdir = pipeline_args['outDir']+'/'+pipeline_args['projectName']
 				print "Reanalyzing data from an existing project"
 			else:
 				os.stat(pipeline_args['outDir']+'/'+pipeline_args['projectName'])
@@ -153,24 +154,26 @@ class Pipeline(BasePipeline):
 			plink = pipeline_config['plink']['path']
 			)
 
-		keep_files = self.ethnic_plinks_lists(
-			phenotype = pipeline_args['phenoFile'],
-			plinkFileName = reduced_plink_name,
-			famFile = pipeline_args['inputPLINK'][:-4] + '.fam',
-			removeSamples = pipeline_args['sampleRemoval'],
-			outDir = outdir
-			)
-
-
-		# will make separate plink files for each ethnic group and use autosomes only
-		for key, value in keep_files.iteritems():
-			general_plink.run(
-				Parameter('--bfile', pipeline_args['inputPLINK'][:-4]),
-				Parameter('--keep', value),
-				Parameter('--autosome'),
-				Parameter('--make-bed'),
-				Parameter('--out', outdir + '/' + str(key) + '/' + reduced_plink_name + '_' + str(key))
+		
+		if pipeline_args['reanalyze'] == False:
+			keep_files = self.ethnic_plinks_lists(
+				phenotype = pipeline_args['phenoFile'],
+				plinkFileName = reduced_plink_name,
+				famFile = pipeline_args['inputPLINK'][:-4] + '.fam',
+				removeSamples = pipeline_args['sampleRemoval'],
+				outDir = outdir
 				)
+
+
+			# will make separate plink files for each ethnic group and use autosomes only
+			for key, value in keep_files.iteritems():
+				general_plink.run(
+					Parameter('--bfile', pipeline_args['inputPLINK'][:-4]),
+					Parameter('--keep', value),
+					Parameter('--autosome'),
+					Parameter('--make-bed'),
+					Parameter('--out', outdir + '/' + str(key) + '/' + reduced_plink_name + '_' + str(key))
+					)
 
 
 		while len(step_order) != 0:
@@ -447,7 +450,7 @@ class Pipeline(BasePipeline):
 
 
 			elif step_order[0] == 'PCA':
-				#TO DO merge LD pruned 1000 genomes
+				
 				print "running PCA step"
 				subprocess.call(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen', phenoFile_Genesis.name])
 				step_order.pop(0)
