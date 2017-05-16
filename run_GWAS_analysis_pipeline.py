@@ -420,7 +420,7 @@ class Pipeline(BasePipeline):
 			
 			elif step_order[0] == '1000_genomes':
 				
-				no_suffix = pipeline_config['thousand_genomes'][:-4]
+				no_suffix = pipeline_config['thousand_genomes']['path'][:-4]
 				general_plink.run(
 					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed'),
 					Parameter('--bmerge', no_suffix + '.bed', no_suffix + '.bim', no_suffix + '.fam'),
@@ -438,7 +438,7 @@ class Pipeline(BasePipeline):
 				phenoFile_Genesis = open(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen_phenoGENESIS.txt', 'w')
 				# run KING and output file as -b prefix name ending in .kin, .kin0
 				general_king.run(
-					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen.bed'),
+					Parameter('-b', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen.bed'),
 					Parameter('--prefix', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen')
 					)
 
