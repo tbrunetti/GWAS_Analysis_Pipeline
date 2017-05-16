@@ -44,6 +44,8 @@ class Pipeline(BasePipeline):
 		parser.add_argument('--maf', default=0.05, type=float, help='[default=0.05], filter remaining LD pruned variants by MAF')
 		parser.add_argument('--hetThresh', default=0.10, type=float, help='[default=0.10], filter out samples where inbreeding coefficient is greater than threshold (heterozygosity filtering)')
 		parser.add_argument('--reanalyze', action='store_true', help='by adding this flag, it means you are going to pass a dataset through the pipeline that has already been partially/fully analyzed by this pipeline. WARNING! May over write exisiting data!!')
+		parser.add_argument('--user', default=None, type=str, help='user name for HPC charge')
+		parser.add_argument('--projectCharge', default=None, type=str, help='project name on HPC to charge')
 
 	@staticmethod
 	def check_steps(order, start, stop):
@@ -83,6 +85,7 @@ class Pipeline(BasePipeline):
 		race_subsets_cleaned = [i for i in race_subsets if str(i)!='nan'] # removes samples that do not have a race listed 
 		make_plinks = {} # stores file name of samples to keep for each group
 		
+
 		for ethnic_group in race_subsets_cleaned:
 			os.mkdir(outDir + '/' + '_'.join(ethnic_group.split()))
 			keep_file = open(outDir + '/' + '_'.join(ethnic_group.split()) + '/' + plinkFileName +'_'+str('_'.join(ethnic_group.split())) + '_keepIDs.txt', 'w')
@@ -122,8 +125,11 @@ class Pipeline(BasePipeline):
 		
 		# specifying output location and conflicting project names of files generated	
 		try:
-			os.stat(pipeline_args['outDir']+'/'+pipeline_args['projectName'])
-			sys.exit("project already exists!!")
+			if pipeline_args['reanalyze'] == True:
+				print "Reanalyzing data from an existing project"
+			else:
+				os.stat(pipeline_args['outDir']+'/'+pipeline_args['projectName'])
+				sys.exit("project already exists!!")
 		except:
 			print "Making new directory called "+str(pipeline_args['projectName']) + ' located in ' + str(pipeline_args['outDir'])
 			outdir = pipeline_args['outDir']+'/'+pipeline_args['projectName'] # new output directory
@@ -135,8 +141,9 @@ class Pipeline(BasePipeline):
 
 
 
-		#step_order = ['hwe', 'LD', 'maf', 'merge', 'het', ibd', 'KING', 'PCA'] # order of pipeline if full suite is used
-		step_order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', 'KING', 'PCA']
+		#step_order = ['hwe', 'LD', 'maf', 'merge', 'het', ibd', '1000_genomes', 'KING', 'PCA'] # order of pipeline if full suite is used
+		#step_order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', '1000_genomes', 'KING', 'PCA']
+		step_order = ['GENanalysis']
 		# initialize PLINK and KING software
 		general_plink = Software('plink', pipeline_config['plink']['path'])
 		general_king = Software('king', pipeline_config['king']['path'])
@@ -394,26 +401,46 @@ class Pipeline(BasePipeline):
 					)
 				
 				ibd_results = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged.genome', delim_whitespace=True)
-				relatedness_stats = summary_stats.relatedness(ibd_dataframe = ibd_results, outDir=outdir)
+				relatedness_stats, remove_samples = summary_stats.relatedness(ibd_dataframe = ibd_results, outDir=outdir)
+
+				# remove samples that are duplicates
+				general_plink.run(
+					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged'),
+					Parameter('--remove', remove_samples),
+					Parameter('--make-bed'),
+					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed')
+					)
+				
+				step_order.pop(0)
+	
+
+			
+			elif step_order[0] == '1000_genomes':
+				
+				no_suffix = pipeline_config['thousand_genomes'][:-4]
+				general_plink.run(
+					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed'),
+					Parameter('--bmerge', no_suffix + '.bed', no_suffix + '.bim', no_suffix + '.fam'),
+					Parameter('--make-bed'),
+					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen')
+					)
+
 
 				step_order.pop(0)
-				
 
-				## TO DO: REMOVE DUPLICATE SAMPLE IDs
-	
 
 			elif step_order[0] == 'KING':
 				
 				print "running KING step"
-				phenoFile_Genesis = open(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_phenoGENESIS.txt', 'w')
+				phenoFile_Genesis = open(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen_phenoGENESIS.txt', 'w')
 				# run KING and output file as -b prefix name ending in .kin, .kin0
 				general_king.run(
-					Parameter('-b', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged.bed'),
-					Parameter('--prefix', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged')
+					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen.bed'),
+					Parameter('--prefix', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen')
 					)
 
 				# generate phenotype table for input into GENESIS analysis  pipeline
-				pheno_Genesis = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
+				pheno_Genesis = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
 				pheno_Genesis[['IID', 'AFF']].to_csv(phenoFile_Genesis.name, sep='\t', index=False, header=False) # format it FID <tab> IID <new line>
 
 				step_order.pop(0)
@@ -422,11 +449,25 @@ class Pipeline(BasePipeline):
 			elif step_order[0] == 'PCA':
 				#TO DO merge LD pruned 1000 genomes
 				print "running PCA step"
-				subprocess.call(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged', phenoFile_Genesis.name])
-				
+				subprocess.call(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen', phenoFile_Genesis.name])
 				step_order.pop(0)
 
 
+			# this is the step at which analysis will be restarted so as to add PCs from
+			# previous step
+			elif step_order[0] == 'GENanalysis':
+				final_results_merge = open(outdir +'/final_results_merged.txt', 'a+')
+				pass;
+				# run a shell script which will submit slurm script
+				subprocess.call(['./export_var_slurm_streamlined.sh', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen'])
+				# concatenate all results together with only one line of header
+				subprocess.call(['head', '-n', '1', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGensplit00.results.txt'], stdout=final_results_merged.name)
+				subprocess.call(['tail', '-n', '+2', '-q', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGensplit0*.results.txt'], stdout=final_results_merged.name)
+				
+				# creates Manhattan and qqplots of data
+				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R'])
+
+		
 		print "writing results to PDF"
 		paramsThresh = summary_stats.parameters_and_thresholds(params=pipeline_args)
 
