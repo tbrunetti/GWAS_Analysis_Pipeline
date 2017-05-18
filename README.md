@@ -20,7 +20,7 @@ The following are the minimum software requirements:
 * virtualenv -- ONLY required if admin rights are not granted (https://virtualenv.pypa.io/en/stable/) 
 
 
-__*--R libraries that need to be installed manually--*__
+__*--R libraries that need to be installed manually--*__  
 The following list of R libraries must be installed and functional:
 
 
@@ -55,8 +55,8 @@ There are two files that are minimally required in order to run the pipeline:
 ------------------------------------------------------------------------------------------------------------------------------
 For users running the pipeline on a HPC system or without administrative privileges, a virtual environment must be created in order to utilize the pipeline to its maximum capabilities and efficiency.  The reason being, certain packages and dependencies can be installed using the pipeline to provide the user with an easy-to-use experience.  Many of these packages will install on your system globally, which cannot be done on shared distributed file systems such as HPC or if administrative rights are not granted on the computer you are using.  To bypass this, you will need to create a Python Virtual Environment.  Below are the steps for installing and creating this environment on your HPC.  NOTE:  THIS ONLY EVER NEEDS TO BE DONE ONE TIME!
 
-1.  Download and Install virtualenv
-------------------------------------
+**1.  Download and Install virtualenv**
+----------------------------------------
 For the full documentation of of virtualenv please refer to the following website:  https://virtualenv.pypa.io/en/stable/installation/  Typing in the following commands below will download virtualenv from the Web and create a virtual environment call myVE under the virtualenv-15.0.0 directory.  The name myVE can be changed to any full path file name of your choosing so that the virtual environment does not need to be listed in the virtualenv-15.0.0 directory.
 
 ```
@@ -87,8 +87,8 @@ Now you are working in your regular environment.  All the data you generated in 
 
 It is also **critical** on HPC systems to load the python module **PRIOR TO ACTIVATION** of your virtual environment.  
 
-2.  Clone Repository (only needs to be done once)
--------------------------------------------------
+**2.  Clone Repository (only needs to be done once)**
+------------------------------------------------------
 
 First make sure you have loaded the Python module on your HPC and then activated your virutal environment.  Next, within your virutual environment clone the this git repository.
 ```
@@ -100,8 +100,8 @@ $ source bin/activate
 ```
 The pipeline has been successfully cloned into your virtual environment.  Next, we will need to install and configure the pipeline using chunkypipes.  
 
-3. Activate chunkypipes, configure and install pipeline (only needs to be performed once)
------------------------------------------------------------------------------------------
+**3. Activate chunkypipes, configure and install pipeline (only needs to be performed once)**
+----------------------------------------------------------------------------------------------
 With your virutal environment still active, install chunkypipes into your virtual environment.
 ```
 (myVE)$ pip install chunkypipes
@@ -144,7 +144,33 @@ Full path to directory where R libraries are stored []:
 Full path to PLINK executable []:
 Full path to PLINK BED file format LD pruned phase 3 1000 genomes files []:
 Configuration file successfully written
+```  
+
+
+**4.   Modifying the Slurm script**
+------------------------------------
+Now that the pipeline had been successfully installed and configured the user can modify the provided slurm script.  The slurm script is the only script that the user will have to submit in order to run the pipeline.  This script is called *run_analysis_HPC_slurm.sh*.  All other python scripts, shell scripts, and R scripts are taken care of on the backend.  
+
+Any of the #SBATCH lines can be modified based on the specs and allocations of the HPC.  
 ```
+#!/bin/bash
+
+#SBATCH --time=2880
+#SBATCH --ntasks=5
+#SBATCH --mem=100000
+#SBATCH --job-name=prototyping_pipeline
+#SBATCH --output=prototyping_pipeline.log
+```
+Although the script  has a time set of 24 hours (2880 min), when running the pipeline from the very beginning throught PCA calculations (the most time intensive part) runs ~1700 samples on the MEGA chip (~1.5 million SNPS per sample post initial QC cleanup) in about ~10 hours.  Although this time will shorten once the code is parallelized.  
+
+It is recommended not to set the memory parameter too low since calculating the PCs and running GENESIS may require large amounts of memory.  To give the user an idea of how much to allocate, this pipeline was prototyped on the MEGA chip (~1.5 million snps per sample post initial QC cleanup) across ~1700 samples and it runs from the very beginning of the pipeline though PCA calculation step using less than 100G of memory.  The same amount of memory allocation was used to run the GENanalysis step of the pipeline, although this is can probably be significantly scaled down.  
+  
+The eval statment can be comment out if the --account flag is not going to be used when submitting the script via sbatch.
+```
+eval "#SBATCH --account=TICR=${USER}"
+```
+
+
 
 ## Installing and Running Pipeline with on personal system with sudo privileges
 -------------------------------------------------------------------------------
