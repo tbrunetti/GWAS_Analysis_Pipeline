@@ -1,4 +1,5 @@
-library(qqman, lib.loc="~/R/x86_64-pc-linux-gnu-library/3.3/")
+library("qqman", lib.loc="~/R/x86_64-pc-linux-gnu-library/3.3/")
+
 args <- commandArgs(trailingOnly = T)
 
 final_merged_text = args[1]
