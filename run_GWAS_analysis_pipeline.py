@@ -120,7 +120,9 @@ class Pipeline(BasePipeline):
 		from fpdf import FPDF
 		import PyPDF2
 
-		
+		# keeps track of all files that can be deleted after the pipeline finishes
+		stage_for_deletion = []
+
 		reduced_plink_name = pipeline_args['inputPLINK'].split('/')[-1][:-4] #only get plink file name not full absolute path and removes suffix
 		
 		# specifying output location and conflicting project names of files generated	
@@ -143,8 +145,8 @@ class Pipeline(BasePipeline):
 
 
 		#step_order = ['hwe', 'LD', 'maf', 'merge', 'het', ibd', '1000_genomes', 'KING', 'PCA'] # order of pipeline if full suite is used
-		#step_order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', '1000_genomes', 'KING', 'PCA']
-		step_order = ['GENanalysis']
+		step_order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', '1000_genomes', 'KING', 'PCA']
+		#step_order = ['GENanalysis']
 		# initialize PLINK and KING software
 		general_plink = Software('plink', pipeline_config['plink']['path'])
 		general_king = Software('king', pipeline_config['king']['path'])
@@ -424,10 +426,10 @@ class Pipeline(BasePipeline):
 				general_plink.run(
 					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed'),
 					Parameter('--bmerge', no_suffix + '.bed', no_suffix + '.bim', no_suffix + '.fam'),
+					Parameter('--allow-no-sex'),
 					Parameter('--make-bed'),
 					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen')
 					)
-
 
 				step_order.pop(0)
 
@@ -435,15 +437,27 @@ class Pipeline(BasePipeline):
 			elif step_order[0] == 'KING':
 				
 				print "running KING step"
-				phenoFile_Genesis = open(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen_phenoGENESIS.txt', 'w')
-				# run KING and output file as -b prefix name ending in .kin, .kin0
+				phenoFile_thous_Genesis = open(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen_phenoGENESIS.txt', 'w')
+				phenoFile_Genesis = open(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_phenoGENESIS.txt', 'w')
+
+				# run KING and output file as -b prefix name ending in .kin, .kin0 with 1000 genomes
 				general_king.run(
 					Parameter('-b', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen.bed'),
 					Parameter('--prefix', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen')
 					)
+				
+				# run KING and output file as -b prefix name ending in .kin, .kin0 WITHOUT 1000 genomes
+				general_king.run(
+					Parameter('-b', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bed'),
+					Parameter('--prefix', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed')
+					)
 
-				# generate phenotype table for input into GENESIS analysis  pipeline
-				pheno_Genesis = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
+				# generate phenotype table for input into GENESIS setup analysis pipeline with 1000 genomes
+				pheno_1000_Genesis = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
+				pheno_1000_Genesis[['IID', 'AFF']].to_csv(phenoFile_thous_Genesis.name, sep='\t', index=False, header=False) # format it FID <tab> IID <new line>
+				
+				# generate phenotype table for input into GENESIS setup analysis pipeline WITHOUT 1000 genomes
+				pheno_Genesis = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
 				pheno_Genesis[['IID', 'AFF']].to_csv(phenoFile_Genesis.name, sep='\t', index=False, header=False) # format it FID <tab> IID <new line>
 
 				step_order.pop(0)
@@ -452,29 +466,45 @@ class Pipeline(BasePipeline):
 			elif step_order[0] == 'PCA':
 				
 				print "running PCA step"
-				subprocess.call(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen', phenoFile_Genesis.name])
+				#Popen should launch jobs in parallel
+				processes = []
+				processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen', phenoFile_thous_Genesis.name]))
+				processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed', phenoFile_Genesis.name]))
+				print "waiting for GENESIS_setup_ANALYSIS_PIPELINE.R to finish jobs"
+				for job in processes:
+					job.wait() # wait for all parallel jobs to finish
+
+				#subprocess.call(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen', phenoFile_thous_Genesis.name])
+				#subprocess.call(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed', phenoFile_Genesis.name])
 				step_order.pop(0)
 
 
 			# this is the step at which analysis will be restarted so as to add PCs from
 			# previous step
 			elif step_order[0] == 'GENanalysis':
-				final_results_merge = open(outdir +'/final_results_merged.txt', 'a+')
+				final_results_merged = open(outdir +'/final_results_merged.txt', 'a+')
+				
+				## NEED TO ADD HOW MANY FILE SPLITS THERE WILL BE AND NAM
+
 				# run a shell script which will submit slurm script
-				subprocess.call(['./export_var_slurm_streamlined.sh', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen'])
+				subprocess.call(['./export_var_slurm_streamlined.sh', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed'])
 				# concatenate all results together with only one line of header
-				subprocess.call(['head', '-n', '1', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGensplit00.results.txt'], stdout=final_results_merged.name)
-				subprocess.call(['tail', '-n', '+2', '-q', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGensplit0*.results.txt'], stdout=final_results_merged.name)
+
+
+				## NEED TO ADD A FILE CHECK HERE -- DO NOT PROCEED UNTIL ALL FILES CREATED
+
+				subprocess.call(['head', '-n', '1', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removedsplit00.results.txt'], stdout=final_results_merged)
+				subprocess.call(['tail', '-n', '+2', '-q', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removedsplit0*.results.txt'], stdout=final_results_merged)
 				
 				# creates Manhattan and qqplots of data
-				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen.bim'])
+				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim'])
 
 		
 		print "writing results to PDF"
 		paramsThresh = summary_stats.parameters_and_thresholds(params=pipeline_args)
 
 
-		# output PDFsS
+		# output PDFs -- need to make this compatible with --reanalyze
 		relatedness_stats.output(outdir + '/' + pipeline_args['projectName'] + '_relatedness.pdf', 'F')
 		paramsThresh.output(outdir + '/' + pipeline_args['projectName'] + '_parameters_and_thresholds.pdf', 'F')
 		hwe_stats.output(outdir + '/' + pipeline_args['projectName'] + '_hweStats.pdf', 'F')
