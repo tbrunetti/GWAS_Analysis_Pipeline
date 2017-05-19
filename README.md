@@ -155,17 +155,18 @@ Any of the #SBATCH lines can be modified based on the specs and allocations of t
 ```
 #!/bin/bash
 
-#SBATCH --time=2880
+#SBATCH --time=1440
 #SBATCH --ntasks=5
 #SBATCH --mem=100000
 #SBATCH --job-name=prototyping_pipeline
 #SBATCH --output=prototyping_pipeline.log
+#SBATCH -p defq
 ```
-Although the script  has a time set of 24 hours (2880 min), when running the pipeline from the very beginning throught PCA calculations (the most time intensive part) runs ~1700 samples on the MEGA chip (~1.5 million SNPS per sample post initial QC cleanup) in about ~10 hours.  Although this time will shorten once the code is parallelized.  
+Although the script  has a time set of 24 hours (1440 min), when running the pipeline from the very beginning throught PCA calculations (the most time intensive part) runs ~1700 samples on the MEGA chip (~1.5 million SNPS per sample post initial QC cleanup) in about ~10 hours.  Although this time will shorten once the code is parallelized.  
 
-It is recommended not to set the memory parameter too low since calculating the PCs and running GENESIS may require large amounts of memory.  To give the user an idea of how much to allocate, this pipeline was prototyped on the MEGA chip (~1.5 million snps per sample post initial QC cleanup) across ~1700 samples and it runs from the very beginning of the pipeline though PCA calculation step using less than 100G of memory.  The same amount of memory allocation was used to run the GENanalysis step of the pipeline, although this is can probably be significantly scaled down.  
+It is recommended not to set the memory parameter too low since calculating the PCs and running GENESIS may require large amounts of memory.  To give the user an idea of how much to allocate, this pipeline was prototyped on the MEGA chip (~1.5 million snps per sample post initial QC cleanup) across ~1700 samples and it runs from the very beginning of the pipeline though PCA calculation step using less than 100GB of memory.  The same amount of memory allocation was used to run the GENanalysis step of the pipeline, although this is can probably be significantly scaled down.  
   
-The eval statment can be comment out if the --account flag is not going to be used when submitting the script via sbatch.
+The eval statment can be commented out if the --account flag is not going to be used when submitting the script via sbatch.
 ```
 eval "#SBATCH --account=TICR=${USER}"
 ```
