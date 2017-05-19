@@ -11,7 +11,10 @@ eval "#SBATCH --account=TICR=${USER}"
 
 module load <python location>
 module load <R location>
-module load torque
+module load <torque location>
+module load <libpng location>
+module load <freetype location>
+module load < gcc location>
 
 cd <into your virtual environment>
 source bin/activate
