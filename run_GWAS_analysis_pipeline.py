@@ -1,7 +1,10 @@
 from chunkypipes.components import *
+import multiprocessing
+import math
 import datetime
 import sys
 import os
+import time
 
 class Pipeline(BasePipeline):
 	def dependencies(self):
@@ -44,9 +47,7 @@ class Pipeline(BasePipeline):
 		parser.add_argument('--maf', default=0.05, type=float, help='[default=0.05], filter remaining LD pruned variants by MAF')
 		parser.add_argument('--hetThresh', default=0.10, type=float, help='[default=0.10], filter out samples where inbreeding coefficient is greater than threshold (heterozygosity filtering)')
 		parser.add_argument('--reanalyze', action='store_true', help='by adding this flag, it means you are going to pass a dataset through the pipeline that has already been partially/fully analyzed by this pipeline. WARNING! May over write exisiting data!!')
-		parser.add_argument('--user', default=None, type=str, help='user name for HPC charge')
-		parser.add_argument('--projectCharge', default=None, type=str, help='project name on HPC to charge')
-
+		
 	@staticmethod
 	def check_steps(order, start, stop):
 		pass
@@ -107,6 +108,9 @@ class Pipeline(BasePipeline):
 			make_plinks['_'.join(ethnic_group.split())]=keep_file.name
 			keep_file.flush()
 			keep_file.close()
+
+		# also create a directory to sort through merged ethnic results
+		os.mkdir(outDir + '/merged_group_files')
 		
 		return make_plinks
 
@@ -183,9 +187,10 @@ class Pipeline(BasePipeline):
 			# hardy-weinberg equilibrium filtering
 			if step_order[0] == 'hwe':
 				print "running HWE step"
+				print multiprocessing.cpu_count()
 				hwe_passing = {}
 				for directories in os.listdir(outdir):
-					if os.path.isdir(os.path.join(outdir, directories)):
+					if ((os.path.isdir(os.path.join(outdir, directories))) and (directories != 'merged_group_files')):
 
 						general_plink.run(
 							Parameter('--bfile', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories),
@@ -213,7 +218,7 @@ class Pipeline(BasePipeline):
 
 				if pipeline_args['LDmethod'] == 'indep': # gets lists of variants to keep and to prune using VIP
 					for directories in os.listdir(outdir):
-						if os.path.isdir(os.path.join(outdir, directories)):
+						if ((os.path.isdir(os.path.join(outdir, directories))) and (directories != 'merged_group_files')):
 							general_plink.run(
 								Parameter('--bfile', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories + '_hweFiltered'),
 								Parameter('--'+pipeline_args['LDmethod'], str(pipeline_args['windowSize'])+'kb', str(pipeline_args['stepSize']), str(pipeline_args['VIF'])),
@@ -235,7 +240,7 @@ class Pipeline(BasePipeline):
 				
 				else:
 					for directories in os.listdir(outdir): # get lists of variants to keep and to prune using rsq
-						if os.path.isdir(os.path.join(outdir, directories)):
+						if ((os.path.isdir(os.path.join(outdir, directories))) and (directories != 'merged_group_files')):
 							general_plink.run(
 								Parameter('--bfile', outdir + '/' + directories + '/' + reduced_plink_name + '_' + directories + '_hweFiltered'),
 								Parameter(pipeline_args['LDmethod'], str(pipeline_args['windowSize'])+'kb', str(pipeline_args['stepSize']), str(pipeline_args['rsq'])),
@@ -266,7 +271,7 @@ class Pipeline(BasePipeline):
 				
 				maf_passing = {}
 				for directories in os.listdir(outdir):
-					if os.path.isdir(os.path.join(outdir, directories)):
+					if ((os.path.isdir(os.path.join(outdir, directories))) and (directories != 'merged_group_files')):
 						
 						# filters out variants below set maf threshold
 						general_plink.run(
@@ -335,9 +340,9 @@ class Pipeline(BasePipeline):
 
 				# recalculate freq stats for merged set
 				general_plink.run(
-					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged'),
+					Parameter('--bfile', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged'),
 					Parameter('--freq'),
-					Parameter('--out', outdir + '/' + reduced_plink_name + '_freq_recalculated_greater_all_merged')
+					Parameter('--out', outdir + '/merged_group_files/' + reduced_plink_name + '_freq_recalculated_greater_all_merged')
 					)
 
 
@@ -356,15 +361,15 @@ class Pipeline(BasePipeline):
 					Parameter('--bfile', prefixFirstSmall),
 					Parameter('--merge-list', list_of_merge_maf_less_thresh.name),
 					Parameter('--make-bed'),
-					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_less_thresh_all_ethnic_groups_merged')
+					Parameter('--out', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_less_thresh_all_ethnic_groups_merged')
 					)
 
 
 				# recalculate freq stats for merged set
 				general_plink.run(
-					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_less_thresh_all_ethnic_groups_merged'),
+					Parameter('--bfile', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_less_thresh_all_ethnic_groups_merged'),
 					Parameter('--freq'),
-					Parameter('--out', outdir + '/' + reduced_plink_name + '_freq_recalculated_less_all_merged')
+					Parameter('--out', outdir + '/merged_group_files/' + reduced_plink_name + '_freq_recalculated_less_all_merged')
 					)
 
 				step_order.pop(0)
@@ -373,20 +378,20 @@ class Pipeline(BasePipeline):
 			elif step_order[0] == 'het':
 				print "checking heterozygosity"
 				general_plink.run(
-					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged'),
+					Parameter('--bfile', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged'),
 					Parameter('--het'),
-					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged')
+					Parameter('--out', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged')
 					)
 
 
-				het_dataframe = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged.het', delim_whitespace=True)
+				het_dataframe = pd.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged.het', delim_whitespace=True)
 				samples_failing_het, het_pdf = summary_stats.heterozygosity(het_dataframe = het_dataframe, thresh = pipeline_args['hetThresh'], outDir = outdir)
 				
 				general_plink.run(
-					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged'),
+					Parameter('--bfile', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged'),
 					Parameter('--remove', samples_failing_het),
 					Parameter('--make-bed'),
-					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged')
+					Parameter('--out', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged')
 					)
 				
 				step_order.pop(0)
@@ -399,21 +404,21 @@ class Pipeline(BasePipeline):
 				# only gets run on the bed file with MAF > specified tresh
 				print "running PLINK ibd step"
 				general_plink.run(
-					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged'),
+					Parameter('--bfile', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged'),
 					Parameter('--genome'),
-					Parameter('--read-freq', outdir + '/' + reduced_plink_name + '_freq_recalculated_greater_all_merged.frq'),
-					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged')
+					Parameter('--read-freq', outdir + '/merged_group_files/' + reduced_plink_name + '_freq_recalculated_greater_all_merged.frq'),
+					Parameter('--out', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged')
 					)
 				
-				ibd_results = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged.genome', delim_whitespace=True)
+				ibd_results = pd.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged.genome', delim_whitespace=True)
 				relatedness_stats, remove_samples = summary_stats.relatedness(ibd_dataframe = ibd_results, outDir=outdir)
 
 				# remove samples that are duplicates
 				general_plink.run(
-					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged'),
+					Parameter('--bfile', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged'),
 					Parameter('--remove', remove_samples),
 					Parameter('--make-bed'),
-					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed')
+					Parameter('--out', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed')
 					)
 				
 				step_order.pop(0)
@@ -424,11 +429,11 @@ class Pipeline(BasePipeline):
 				
 				no_suffix = pipeline_config['thousand_genomes']['path'][:-4]
 				general_plink.run(
-					Parameter('--bfile', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed'),
+					Parameter('--bfile', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed'),
 					Parameter('--bmerge', no_suffix + '.bed', no_suffix + '.bim', no_suffix + '.fam'),
 					Parameter('--allow-no-sex'),
 					Parameter('--make-bed'),
-					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen')
+					Parameter('--out', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen')
 					)
 
 				step_order.pop(0)
@@ -437,27 +442,27 @@ class Pipeline(BasePipeline):
 			elif step_order[0] == 'KING':
 				
 				print "running KING step"
-				phenoFile_thous_Genesis = open(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen_phenoGENESIS.txt', 'w')
-				phenoFile_Genesis = open(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_phenoGENESIS.txt', 'w')
+				phenoFile_thous_Genesis = open(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen_phenoGENESIS.txt', 'w')
+				phenoFile_Genesis = open(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_phenoGENESIS.txt', 'w')
 
 				# run KING and output file as -b prefix name ending in .kin, .kin0 with 1000 genomes
 				general_king.run(
-					Parameter('-b', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen.bed'),
-					Parameter('--prefix', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen')
+					Parameter('-b', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen.bed'),
+					Parameter('--prefix', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen')
 					)
 				
 				# run KING and output file as -b prefix name ending in .kin, .kin0 WITHOUT 1000 genomes
 				general_king.run(
-					Parameter('-b', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bed'),
-					Parameter('--prefix', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed')
+					Parameter('-b', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bed'),
+					Parameter('--prefix', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed')
 					)
 
 				# generate phenotype table for input into GENESIS setup analysis pipeline with 1000 genomes
-				pheno_1000_Genesis = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
+				pheno_1000_Genesis = pd.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
 				pheno_1000_Genesis[['IID', 'AFF']].to_csv(phenoFile_thous_Genesis.name, sep='\t', index=False, header=False) # format it FID <tab> IID <new line>
 				
 				# generate phenotype table for input into GENESIS setup analysis pipeline WITHOUT 1000 genomes
-				pheno_Genesis = pd.read_table(outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
+				pheno_Genesis = pd.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
 				pheno_Genesis[['IID', 'AFF']].to_csv(phenoFile_Genesis.name, sep='\t', index=False, header=False) # format it FID <tab> IID <new line>
 
 				step_order.pop(0)
@@ -468,14 +473,12 @@ class Pipeline(BasePipeline):
 				print "running PCA step"
 				#Popen should launch jobs in parallel
 				processes = []
-				processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen', phenoFile_thous_Genesis.name]))
-				processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed', phenoFile_Genesis.name]))
-				print "waiting for GENESIS_setup_ANALYSIS_PIPELINE.R to finish jobs"
-				for job in processes:
-					job.wait() # wait for all parallel jobs to finish
+				processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen', phenoFile_thous_Genesis.name]))
+				processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed', phenoFile_Genesis.name]))
 
-				#subprocess.call(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen', phenoFile_thous_Genesis.name])
-				#subprocess.call(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed', phenoFile_Genesis.name])
+				for job in processes:
+					job.wait() # wait for all parallel jobs to finish before proceeding to next step
+
 				step_order.pop(0)
 
 
@@ -484,27 +487,51 @@ class Pipeline(BasePipeline):
 			elif step_order[0] == 'GENanalysis':
 				final_results_merged = open(outdir +'/final_results_merged.txt', 'a+')
 				
-				## NEED TO ADD HOW MANY FILE SPLITS THERE WILL BE AND NAM
+				# calculates the number of chunked files that will be produced and what the names of those files will be
+
+				num_snps = sum(1 for line in open(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim'))
+				num_files = int(math.ceil((float(num_snps)/float(100000))))
+
+				# stores name of all chunked files
+				total_files = []
+				for split_range in range(0, num_files):
+					if split_range < 10: # required because linux split uses 00, 01, 02, 03, format therefore when using python iterator a 0 must be appended to front
+						total_files.append(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removedsplit0'+str(split_range)+'.results.txt')
+					else:
+						total_files.append(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removedsplit'+str(split_range)+'.results.txt')
+
 
 				# run a shell script which will submit slurm script
-				subprocess.call(['./export_var_slurm_streamlined.sh', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed'])
+				try:
+					subprocess.call(['./export_var_slurm_streamlined.sh', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed'])
 				# concatenate all results together with only one line of header
+				except:
+					sys.exit("Problem submitting slurm script, system exiting...")
 
 
-				## NEED TO ADD A FILE CHECK HERE -- DO NOT PROCEED UNTIL ALL FILES CREATED
+				## FILE CHECK HERE -- DO NOT PROCEED UNTIL ALL FILES CREATED
 
-				subprocess.call(['head', '-n', '1', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removedsplit00.results.txt'], stdout=final_results_merged)
-				subprocess.call(['tail', '-n', '+2', '-q', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removedsplit0*.results.txt'], stdout=final_results_merged)
+				while True:
+					if all(os.path.isfile(chunk_file) for chunk_file in total_files):
+						break;
+					else:
+						print "waiting for split files..."
+						time.sleep(15) # wait 15 seconds before checking if files are done
+
+				subprocess.call(['head', '-n', '1', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removedsplit00.results.txt'], stdout=final_results_merged)
+				subprocess.call(['tail', '-n', '+2', '-q', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removedsplit0*.results.txt'], stdout=final_results_merged)
 				
 				# creates Manhattan and qqplots of data
-				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim'])
+				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim'])
 
 		
 		print "writing results to PDF"
 		paramsThresh = summary_stats.parameters_and_thresholds(params=pipeline_args)
 
 
+		
 		# output PDFs -- need to make this compatible with --reanalyze
+		# put these under each of the steps
 		relatedness_stats.output(outdir + '/' + pipeline_args['projectName'] + '_relatedness.pdf', 'F')
 		paramsThresh.output(outdir + '/' + pipeline_args['projectName'] + '_parameters_and_thresholds.pdf', 'F')
 		hwe_stats.output(outdir + '/' + pipeline_args['projectName'] + '_hweStats.pdf', 'F')
