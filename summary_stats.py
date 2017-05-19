@@ -204,7 +204,7 @@ def relatedness(ibd_dataframe, outDir):
 	second_in_pair = duplicates[['FID2', 'IID2']]
 	first_in_pair.columns = ['FID', 'IID']
 	second_in_pair.columns = ['FID', 'IID']
-	merged_removals = first_in_pair.merge(second_in_pair, on=['FID', 'IID'])
+	merged_removals = first_in_pair.merge(second_in_pair, how='outer', on=['FID', 'IID'])
 	print merged_removals[['FID', 'IID']]
 	merged_removals[['FID', 'IID']].to_csv(remove_dups.name, sep='\t', index=False, header=False) # output file created to PLINK --remove
 
