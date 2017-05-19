@@ -193,7 +193,16 @@ Finally, the last part of the slurm file is the command to run the pipeline. To 
 ```
 chunky run run_GWAS_analysis_pipeline.py -inputPLINK <plink file.bed or .ped> -phenoFile <sample_sheet_template.xlsx> --outDir <directory to output all results> --projectName <give run a name>
 ```
-To minimally run this pipeline two parameters are required:  -inputPLINK and -phenoFile.  Replace <plink file.bed or .ped> with the full path to the PLINK files you want to analyze.  Replace <sample_sheet_template.xlsx> with the full path or renamed and populated sample_sheet_template.xlsx file.  Although --outDir and --projectName are not required it is **HIGHLY RECOMMENDED** that the user provides a pre-existing directory to redirect results to as it produces several files.  Additionally the projectName can be any string to identify the current run.  This will create a subdirectory within the output directory with the name of the run so all the results do not mix with other files or runs in the output directory.
+To minimally run this pipeline two parameters are required:  -inputPLINK and -phenoFile.  Replace <plink file.bed or .ped> with the full path to the PLINK files you want to analyze.  Replace <sample_sheet_template.xlsx> with the full path or renamed and populated sample_sheet_template.xlsx file.  Although --outDir and --projectName are not required it is **HIGHLY RECOMMENDED** that the user provides a pre-existing directory to redirect results to as it produces several files.  Additionally the projectName can be any string to identify the current run.  This will create a subdirectory within the output directory with the name of the run so all the results do not mix with other files or runs in the output directory.  By default, if this command is called as is, it will make sure the project name does not already exist and create a new subdirectory within the output directory and run the pipeline starting at Hardy-Weinberg equilibrium all the way through the PCA calculations.  **THE PIPELINE WILL NOT RUN THE ASSOCIATION ANALYSIS!!!**  The reason being, GENESIS requires that for association testing that the user knows what PCs wil be used for correcting the data.  Since this requires the user to look at the data after the PCs are generated, the slurm script must be submitted again with the **EXACT SAME RUN COMMAND AS BEFORE** except 2 new flags should be added: --reanalyze and --step GENanalysis need to be added as follows:
+```
+chunky run run_GWAS_analysis_pipeline.py -inputPLINK <plink file.bed or .ped> -phenoFile <sample_sheet_template.xlsx> --outDir <directory to output all results> --projectName <give run a name> --step GENanalysis --reanalyze
+```
+This tells the pipeline to use the same run as before except to start at the GENESIS analysis step and go through the association testing analysis.  The reanalyze flag tells the pipeline that the project already exists and to not overwrite any data and not to exit the system.  
+
+
+This call can be modified with any of the optional parameters that the pipeline offers.  For more information and details on all the parameters please refer to the Running the Pipeline section.
+
+
 
 ## Installing and Running Pipeline with on personal system with sudo privileges
 -------------------------------------------------------------------------------
