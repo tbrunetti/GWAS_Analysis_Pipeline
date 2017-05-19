@@ -179,7 +179,7 @@ module load <libpng location>
 module load <freetype location>
 module load <gcc location>
 ```
-Replace '<module location>' with the location of the module on the users' HPC.  Some of the modules such as libpng and freetype may be automatically unloaded on some HPC systems since they are standard Linux libraries.  
+Replace <module location> with the location of the module on the users' HPC.  Some of the modules such as libpng and freetype may be automatically unloaded on some HPC systems since they are standard Linux libraries.  
 
 Next the user must specify to use the Python virutal environment.  To do this modify the following lines in the slurm script:
 ```
@@ -187,13 +187,13 @@ cd <into your virtual environment>
 source bin/activate
 cd <into cloned repository>
 ```
-Replace '<into your virutal environment>' with the full path into your virutal environment (it should be the location where you see the bin directory of the virutal environment) and replace '<into cloned respository>' with the full path into the clone git repository located within the virutal environment directory (i.e. change directories into GWAS_Analysis_Pipeline).  
+Replace <into your virutal environment> with the full path into your virutal environment (it should be the location where you see the bin directory of the virutal environment) and replace <into cloned respository> with the full path into the clone git repository located within the virutal environment directory (i.e. change directories into GWAS_Analysis_Pipeline).  
 
 Finally, the last part of the slurm file is the command to run the pipeline. To run the pipeline, the user must call 'chunky run' followed by the name of the pipeline, which is run_GWAS_analysis_pipeline.py
 ```
 chunky run run_GWAS_analysis_pipeline.py -inputPLINK <plink file.bed or .ped> -phenoFile <sample_sheet_template.xlsx> --outDir <directory to output all results> --projectName <give run a name>
 ```
-To minimally run this pipeline two parameters are required:  -inputPLINK and -phenoFILE.  Replace '<plink file.bed or .ped>' with the full path to the PLINK files you want to analyze.  Replace '<sample_sheet_template.xlsx>' with the full path or renamed and populated sample_sheet_template.xlsx file.  Although --outDir and --projectName are not required it is **HIGHLY RECOMMENDED** that the user provides a pre-existing directory to redirect results to as it produces several files.  Additionally the projectName can be any string to identify the current run.  This will create a subdirectory within the output directory with the name of the run so all the results do not mix with other files or runs in the output directory.
+To minimally run this pipeline two parameters are required:  -inputPLINK and -phenoFile.  Replace <plink file.bed or .ped> with the full path to the PLINK files you want to analyze.  Replace <sample_sheet_template.xlsx> with the full path or renamed and populated sample_sheet_template.xlsx file.  Although --outDir and --projectName are not required it is **HIGHLY RECOMMENDED** that the user provides a pre-existing directory to redirect results to as it produces several files.  Additionally the projectName can be any string to identify the current run.  This will create a subdirectory within the output directory with the name of the run so all the results do not mix with other files or runs in the output directory.
 
 ## Installing and Running Pipeline with on personal system with sudo privileges
 -------------------------------------------------------------------------------
