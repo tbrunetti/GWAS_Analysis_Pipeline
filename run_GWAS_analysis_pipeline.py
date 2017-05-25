@@ -516,11 +516,13 @@ class Pipeline(BasePipeline):
 						break;
 					else:
 						print "waiting for split files..."
-						time.sleep(15) # wait 15 seconds before checking if files are done
+						time.sleep(60) # wait 1 minute before checking if files are done
 
 				subprocess.call(['head', '-n', '1', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removedsplit00.results.txt'], stdout=final_results_merged)
-				subprocess.call(['tail', '-n', '+2', '-q', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removedsplit0*.results.txt'], stdout=final_results_merged)
-				
+				final_results_merged.flush()
+				for filename in total_files:
+					subprocess.call(['tail', '-n', '+2', '-q', filename], stdout=final_results_merged)
+					final_results_merged.flush()
 				# creates Manhattan and qqplots of data
 				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim'])
 				step_order.pop(0)
