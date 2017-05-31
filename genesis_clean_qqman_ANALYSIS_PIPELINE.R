@@ -37,10 +37,9 @@ plot(c(0,10), c(0,10), col="red", lwd=3, type="l", xlab="Expected (-logP)", ylab
 points(lexp, lobs, pch=23, cex=.4, bg="black") 
 dev.off()
 
-
 #inflation factor lambda
 chisq2 <- qchisq(1-dat.info.out$Score.pval,1,lower.tail = T)
-median(chisq2,na.rm=T)/qchisq(0.5,1)#lambda1
+l = median(chisq2,na.rm=T)/qchisq(0.5,1)#lambda1
 
 #manhattan plot
 library(qqman)
@@ -59,11 +58,13 @@ bmp(filename="qqplot_typed_overlap_allcohort_common_new.bmp", width=800, height=
 #pdf("qqplot_typed_overlap_allcohort_common.pdf", width=6, height=6)
 plot(c(0,10), c(0,10), col="red", lwd=3, type="l", xlab="Expected (-logP)", ylab="Observed (-logP)", xlim=c(0,10), ylim=c(0,10), las=1, xaxs="i", yaxs="i", bty="l")
 points(lexp, lobs, pch=23, cex=.4, bg="black") 
-dev.off()
-
 #inflation factor lambda
 chisq2 <- qchisq(1-dat.info.out.common$Score.pval,1,lower.tail = T)
-median(chisq2,na.rm=T)/qchisq(0.5,1)#lambda1
+lambda <- median(chisq2,na.rm=T)/qchisq(0.5,1)#lambda1
+mtext(bquote(lambda == .(lambda)), side=3, cex=2.0)
+dev.off()
+
+
 
 #manhattan plot common
 library(qqman)
@@ -82,11 +83,13 @@ bmp(filename="qqplot_typed_overlap_allcohort_rare_new.bmp", width=800, height=80
 #pdf("qqplot_typed_overlap_allcohort_rare.pdf", width=6, height=6)
 plot(c(0,10), c(0,10), col="red", lwd=3, type="l", xlab="Expected (-logP)", ylab="Observed (-logP)", xlim=c(0,10), ylim=c(0,10), las=1, xaxs="i", yaxs="i", bty="l")
 points(lexp, lobs, pch=23, cex=.4, bg="black") 
-dev.off()
-
 #inflation factor lambda
 chisq2 <- qchisq(1-dat.info.out.rare$Score.pval,1,lower.tail = T)
-median(chisq2,na.rm=T)/qchisq(0.5,1)#lambda1
+lambda <- median(chisq2,na.rm=T)/qchisq(0.5,1)#lambda1
+mtext(bquote(lambda == .(lambda)), side=3, cex=2.0)
+dev.off()
+
+
 
 #manhattan plot rare
 library(qqman)
@@ -139,10 +142,12 @@ lexp <- -(log10(expected / (length(expected)+1)))
 #pdf("qqplot_typed_overlap_allcohort.pdf", width=6, height=6)
 plot(c(0,10), c(0,10), col="red", lwd=3, type="l", xlab="Expected (-logP)", ylab="Observed (-logP)", xlim=c(0,10), ylim=c(0,10), las=1, xaxs="i", yaxs="i", bty="l")
 points(lexp, lobs, pch=23, cex=.4, bg="black") 
+chisq2 <- qchisq(1-dat.info.out$Score.pval,1,lower.tail = T)
+lambda <- median(chisq2,na.rm=T)/qchisq(0.5,1)#lambda1
+mtext(bquote(lambda == .(lambda)), side=3, cex=2.0)
 dev.off()
 
-chisq2 <- qchisq(1-dat.info.out$Score.pval,1,lower.tail = T)
-median(chisq2,na.rm=T)/qchisq(0.5,1)#lambda1
+
 
 
 # qq common with CI
@@ -184,10 +189,12 @@ lexp <- -(log10(expected / (length(expected)+1)))
 #pdf("qqplot_typed_overlap_allcohort_common.pdf", width=6, height=6)
 plot(c(0,10), c(0,10), col="red", lwd=3, type="l", xlab="Expected (-logP)", ylab="Observed (-logP)", xlim=c(0,10), ylim=c(0,10), las=1, xaxs="i", yaxs="i", bty="l")
 points(lexp, lobs, pch=23, cex=.4, bg="black") 
+chisq2 <- qchisq(1-dat.info.out.common$Score.pval,1,lower.tail = T)
+lambda <- median(chisq2,na.rm=T)/qchisq(0.5,1)#lambda1
+mtext(bquote(lambda == .(lambda)), side=3, cex=2.0)
 dev.off()
 
-chisq2 <- qchisq(1-dat.info.out.common$Score.pval,1,lower.tail = T)
-median(chisq2,na.rm=T)/qchisq(0.5,1)#lambda1
+
 
 # qq plot rare with CI
 bmp(filename="qqplot_typed_overlap_allcohort_rare_new_with_CI.bmp", width=800, height=800, bg="white", type="cairo")
@@ -227,7 +234,8 @@ lexp <- -(log10(expected / (length(expected)+1)))
 #pdf("qqplot_typed_overlap_allcohort_rare.pdf", width=6, height=6)
 plot(c(0,10), c(0,10), col="red", lwd=3, type="l", xlab="Expected (-logP)", ylab="Observed (-logP)", xlim=c(0,10), ylim=c(0,10), las=1, xaxs="i", yaxs="i", bty="l")
 points(lexp, lobs, pch=23, cex=.4, bg="black") 
+chisq2 <- qchisq(1-dat.info.out.rare$Score.pval,1,lower.tail = T)
+lambda <- median(chisq2,na.rm=T)/qchisq(0.5,1)#lambda1
+mtext(bquote(lambda == .(lambda)), side=3, cex=2.0)
 dev.off()
 
-chisq2 <- qchisq(1-dat.info.out.rare$Score.pval,1,lower.tail = T)
-median(chisq2,na.rm=T)/qchisq(0.5,1)#lambda1
