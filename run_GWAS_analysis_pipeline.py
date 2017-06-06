@@ -35,7 +35,7 @@ class Pipeline(BasePipeline):
 		parser.add_argument('-phenoFile', required=True, type=str, help='Full path to phenotype file, see argument readme for more details on format')
 		parser.add_argument('--sampleRemoval', default=None, help='Full path for samples to remove before analysis (i.e. those with sex discrepenences, poor QC, etc...) see readme for more details on format')
 		parser.add_argument('--outDir', default=os.getcwd(), type=str, help='[default=current working directory] Full path of existing directory to output results')
-		parser.add_argument('--projectName', default=str(datetime.datetime.now()), type=str, help='[default=date time stamp] Name of project')
+		parser.add_argument('--projectName', default=str(datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")), type=str, help='[default=date time stamp] Name of project')
 		parser.add_argument('--startStep', default='hwe', type=str, help='The part of the pipeline you would like to start with')
 		parser.add_argument('--endStep', default=None, type=str, help='Point of the pipeline where you would like to stop analysis, if none specified, stops after start step is completed')
 		parser.add_argument('--hweThresh', default=1e-6, help='Filters out SNPs that are smaller than this threshold due to liklihood of genotyping error')
@@ -47,7 +47,8 @@ class Pipeline(BasePipeline):
 		parser.add_argument('--maf', default=0.05, type=float, help='[default=0.05], filter remaining LD pruned variants by MAF')
 		parser.add_argument('--hetThresh', default=0.10, type=float, help='[default=0.10], filter out samples where inbreeding coefficient is greater than threshold (heterozygosity filtering)')
 		parser.add_argument('--reanalyze', action='store_true', help='by adding this flag, it means you are going to pass a dataset through the pipeline that has already been partially/fully analyzed by this pipeline. WARNING! May over write exisiting data!!')
-		
+		parser.add_argument('--usePCs', default='pc1,pc2,pc3', type=str, help='[default: pc1,pc2,pc3], the user can pass any pc from 1-8 in a comma separated list to regress out in the GENanalysis step, format should be the following: pc1,pc2,pc3,pc5')
+
 	@staticmethod
 	def check_steps(order, start, stop):
 		pass
@@ -149,8 +150,9 @@ class Pipeline(BasePipeline):
 
 
 		#step_order = ['hwe', 'LD', 'maf', 'merge', 'het', ibd', '1000_genomes', 'KING', 'PCA'] # order of pipeline if full suite is used
-		step_order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', '1000_genomes', 'KING', 'PCA']
+		#step_order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', '1000_genomes', 'KING', 'PCA']
 		#step_order = ['GENanalysis']
+		step_order = ['hwe']
 		# initialize PLINK and KING software
 		general_plink = Software('plink', pipeline_config['plink']['path'])
 		general_king = Software('king', pipeline_config['king']['path'])
@@ -473,8 +475,8 @@ class Pipeline(BasePipeline):
 				print "running PCA step"
 				#Popen should launch jobs in parallel
 				processes = []
-				processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen', phenoFile_thous_Genesis.name]))
-				processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed', phenoFile_Genesis.name]))
+				processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen', phenoFile_thous_Genesis.name, pipeline_config['R_libraries']]))
+				processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed', phenoFile_Genesis.name, pipeline_config['R_libraries']]))
 
 				for job in processes:
 					job.wait() # wait for all parallel jobs to finish before proceeding to next step
@@ -503,7 +505,7 @@ class Pipeline(BasePipeline):
 
 				# run a shell script which will submit slurm script
 				try:
-					subprocess.call(['./export_var_slurm_streamlined.sh', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed'])
+					subprocess.call(['./export_var_slurm_streamlined.sh', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed',pipeline_config['R_libraries']])
 				# concatenate all results together with only one line of header
 				except:
 					sys.exit("Problem submitting slurm script, system exiting...")
@@ -524,7 +526,7 @@ class Pipeline(BasePipeline):
 					subprocess.call(['tail', '-n', '+2', '-q', filename], stdout=final_results_merged)
 					final_results_merged.flush()
 				# creates Manhattan and qqplots of data
-				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim'])
+				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim', pipeline_config['R_libraries']])
 				step_order.pop(0)
 		
 		print "writing results to PDF"
@@ -540,4 +542,3 @@ class Pipeline(BasePipeline):
 		ld_stats.output(outdir + '/' + pipeline_args['projectName'] + '_ldStats.pdf', 'F')
 		maf_stats.output(outdir + '/' + pipeline_args['projectName'] + '_mafStats.pdf', 'F')
 		het_pdf.output(outdir + '/' + pipeline_args['projectName'] + '_hetStats.pdf', 'F')
-		
