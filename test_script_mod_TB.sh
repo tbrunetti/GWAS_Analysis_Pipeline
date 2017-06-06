@@ -5,9 +5,6 @@
 #SBATCH -N 1              # on one node
 #SBATCH -t 0-30:00         # Running time of 1 hours
 #SBATCH --share 
-#SBATCH --mail-user=tonya.brunetti@ucdenver.edu
-#SBATCH --mail-type=FAIL
-##Read the filenames for each set
 
 eval "#SBATCH --account=TICR=${USER}"
 
@@ -31,5 +28,5 @@ for j in split*;
     fam_file=${out}".fam"
     gds_file=${out}".gds"
     #subset_val=$(echo $j|cut -d "." -f 2)
-    Rscript GENESIS_analysis_mod_TB.R $out $pathPLINKprefix
+    Rscript GENESIS_analysis_mod_TB.R $out $pathPLINKprefix $rlib
  done
