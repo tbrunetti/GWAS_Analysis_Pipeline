@@ -1,13 +1,15 @@
-#! Rscript --vanilla --default-packages=utils
-library("gdsfmt", lib.loc="~/R/x86_64-pc-linux-gnu-library/3.3/")
-library("SNPRelate", lib.loc="~/R/x86_64-pc-linux-gnu-library/3.3/")
-library("GWASTools", lib.loc="~/R/x86_64-pc-linux-gnu-library/3.3/")
-library("SeqVarTools", lib.loc="~/R/x86_64-pc-linux-gnu-library/3.3/") 
-library("GENESIS", lib.loc="~/R/x86_64-pc-linux-gnu-library/3.3/")
-
 args <- commandArgs(trailingOnly = T)
 chunkedFile = args[1]
 pathPLINKprefix = args[2]
+rlib = args[3]
+
+#! Rscript --vanilla --default-packages=utils
+library("gdsfmt", lib.loc=rlib)
+library("SNPRelate", lib.loc=rlib)
+library("GWASTools", lib.loc=rlib)
+library("SeqVarTools", lib.loc=rlib) 
+library("GENESIS", lib.loc=rlib)
+
 
 load(paste(pathPLINKprefix, "_GENESIS", sep=""))
 ###association testing
