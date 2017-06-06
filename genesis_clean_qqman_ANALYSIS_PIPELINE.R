@@ -1,9 +1,10 @@
-library("qqman", lib.loc="~/R/x86_64-pc-linux-gnu-library/3.3/")
 
 args <- commandArgs(trailingOnly = T)
 
 final_merged_text = args[1]
 final_bim = args[2]
+
+library("qqman", lib.loc=args[3])
 
 dat.info<-read.delim(final_merged_text)
 bim_file_for_merged_data <- read.delim(final_bim, col.names = c('chr', 'snpID', 'pos_centMorgans', 'POS', 'allele_1', 'allele_2'))
