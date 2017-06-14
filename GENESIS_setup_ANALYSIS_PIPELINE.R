@@ -32,7 +32,7 @@ pheno <- pheno - 1
 
 scanAnnot <- ScanAnnotationDataFrame(data.frame(scanID = mypcrel$sample.id,pc1 = mypcair$vectors[,1],pc2 = mypcair$vectors[,2],
 	pc3 = mypcair$vectors[,3],pc4 = mypcair$vectors[,4],pc5 = mypcair$vectors[,5],pc6 = mypcair$vectors[,6],
-	pc7 = mypcair$vectors[,7]pc8 = mypcair$vectors[,8], pheno = pheno))
+	pc7 = mypcair$vectors[,7],pc8 = mypcair$vectors[,8], pheno = pheno))
 covMatList <- list("Kin" = pcrelateMakeGRM(mypcrel))
 
 # creates a binary file -- can open in R with load()
