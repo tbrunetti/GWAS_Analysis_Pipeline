@@ -46,8 +46,9 @@ class Pipeline(BasePipeline):
 		parser.add_argument('--stepSize', default=5, type=int, help='[default=5] variant count to shift window after each interation')
 		parser.add_argument('--maf', default=0.05, type=float, help='[default=0.05], filter remaining LD pruned variants by MAF')
 		parser.add_argument('--hetThresh', default=0.10, type=float, help='[default=0.10], filter out samples where inbreeding coefficient is greater than threshold (heterozygosity filtering)')
+		parser.add_argument('--hetThreshMin', default=-0.10, type=float, help='')
 		parser.add_argument('--reanalyze', action='store_true', help='by adding this flag, it means you are going to pass a dataset through the pipeline that has already been partially/fully analyzed by this pipeline. WARNING! May over write exisiting data!!')
-		parser.add_argument('--usePCs', default='pc1,pc2,pc3', type=str, help='[default: pc1,pc2,pc3], the user can pass any pc from 1-8 in a comma separated list to regress out in the GENanalysis step, format should be the following: pc1,pc2,pc3,pc5')
+		parser.add_argument('--usePCs', default='pc1,pc2,pc3', type=str, help='[default: pc1,pc2,pc3], the user can pass any pc from 1-8 in a comma separated list to regress out in the GENanalysis step; must be used with --reanalyze flag; format should be the following: pc1,pc2,pc3,pc5')
 
 	@staticmethod
 	def check_steps(order, start, stop):
@@ -387,7 +388,7 @@ class Pipeline(BasePipeline):
 
 
 				het_dataframe = pd.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged.het', delim_whitespace=True)
-				samples_failing_het, het_pdf = summary_stats.heterozygosity(het_dataframe = het_dataframe, thresh = pipeline_args['hetThresh'], outDir = outdir)
+				samples_failing_het, het_pdf = summary_stats.heterozygosity(het_dataframe = het_dataframe, thresh = pipeline_args['hetThresh'], minTresh=hetThreshMin ,outDir = outdir)
 				
 				general_plink.run(
 					Parameter('--bfile', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged'),
@@ -505,7 +506,7 @@ class Pipeline(BasePipeline):
 
 				# run a shell script which will submit slurm script
 				try:
-					subprocess.call(['./export_var_slurm_streamlined.sh', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed',pipeline_config['R_libraries']])
+					subprocess.call(['./export_var_slurm_streamlined.sh', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed',pipeline_config['R_libraries'], pipeline_args['usePCs']])
 				# concatenate all results together with only one line of header
 				except:
 					sys.exit("Problem submitting slurm script, system exiting...")
@@ -526,7 +527,7 @@ class Pipeline(BasePipeline):
 					subprocess.call(['tail', '-n', '+2', '-q', filename], stdout=final_results_merged)
 					final_results_merged.flush()
 				# creates Manhattan and qqplots of data
-				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim', pipeline_config['R_libraries']])
+				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim', pipeline_config['R_libraries'], pipeline_args['projectName']])
 				step_order.pop(0)
 		
 		print "writing results to PDF"
