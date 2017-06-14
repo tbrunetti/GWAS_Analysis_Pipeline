@@ -47,7 +47,7 @@ library(qqman)
 bmp(filename="manhattan_typed_overlap_allcohort_new.bmp", width=800, height=600, bg="white", type="cairo")
 #pdf("manhattan_typed_overlap_allcohort.pdf",width=21,height=10)
 par(font.axis = 2)
-manhattan(dat.info.out,chr = "chr", bp = "POS", p = "Score.pval", snp = "snpID",col = c("gray60", "gray10"), chrlabs = NULL,highlight = NULL, logp = TRUE,suggestiveline = F, genomewideline = F,ylim=c(0,10),main="Association analysis:Genesis Washington")
+manhattan(dat.info.out,chr = "chr", bp = "POS", p = "Score.pval", snp = "snpID",col = c("gray60", "gray10"), chrlabs = NULL,highlight = NULL, logp = TRUE,suggestiveline = F, genomewideline = F,ylim=c(0,10),main=paste("Association analysis: ", args[4], sep =' '))
 dev.off()
 
 #common qq plot
@@ -72,7 +72,7 @@ library(qqman)
 bmp(filename="manhattan_typed_overlap_allcohort_common_new.bmp", width=800, height=600, bg="white", type="cairo")
 #pdf("manhattan_typed_overlap_allcohort_common_new.pdf",width=21,height=10)
 par(font.axis = 2)
-manhattan(dat.info.out.common,chr = "chr", bp = "POS", p = "Score.pval", snp = "snpID",col = c("gray60", "gray10"), chrlabs = NULL,highlight = NULL, logp = TRUE,suggestiveline = F, genomewideline = F, ylim=c(0,10) ,main="Association analysis:Genesis Washington common variants")
+manhattan(dat.info.out.common,chr = "chr", bp = "POS", p = "Score.pval", snp = "snpID",col = c("gray60", "gray10"), chrlabs = NULL,highlight = NULL, logp = TRUE,suggestiveline = F, genomewideline = F, ylim=c(0,10) ,main=paste("Association analysis: ", args[4], 'common variants', sep =' '))
 dev.off()
 
 #rare
@@ -97,7 +97,7 @@ library(qqman)
 bmp(filename="manhattan_typed_overlap_allcohort_rare_new.bmp", width=800, height=600, bg="white", type="cairo")
 #pdf("manhattan_typed_overlap_allcohort_rare.pdf",width=21,height=10)
 par(font.axis = 2)
-manhattan(dat.info.out.rare,chr = "chr", bp = "POS", p = "Score.pval", snp = "snpID",col = c("gray60", "gray10"), chrlabs = NULL,highlight = NULL, logp = TRUE,suggestiveline = F, genomewideline = F, ylim=c(0,10) ,main="Association analysis:Genesis Washington rare variants")
+manhattan(dat.info.out.rare,chr = "chr", bp = "POS", p = "Score.pval", snp = "snpID",col = c("gray60", "gray10"), chrlabs = NULL,highlight = NULL, logp = TRUE,suggestiveline = F, genomewideline = F, ylim=c(0,10) ,main=paste("Association analysis: ", args[4], 'rare variants', sep =' '))
 #dev.off()
 
 
