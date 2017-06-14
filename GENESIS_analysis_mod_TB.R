@@ -2,6 +2,7 @@ args <- commandArgs(trailingOnly = T)
 chunkedFile = args[1]
 pathPLINKprefix = args[2]
 rlib = args[3]
+pcs = args[4]
 
 #! Rscript --vanilla --default-packages=utils
 library("gdsfmt", lib.loc=rlib)
@@ -18,6 +19,6 @@ snpgdsBED2GDS(bed.fn = paste(chunkedFile, ".bed", sep=""), bim.fn = paste(chunke
 gds <- GdsGenotypeReader(paste(chunkedFile, ".gds", sep=""))
 genoData <- GenotypeData(gds)
 
-nullmod.bin <- fitNullMM(scanData = scanAnnot, outcome = "pheno", covars = c("pc1", "pc8"), covMatList = covMatList, family=binomial(link = "logit"))
+nullmod.bin <- fitNullMM(scanData = scanAnnot, outcome = "pheno", covars = unlist(strsplit(pcs, ",")), covMatList = covMatList, family=binomial(link = "logit"))
 myassoc <- assocTestMM(genoData = genoData, nullMMobj = nullmod.bin, test="Score")
 write.table(myassoc,file=paste(chunkedFile,".results.txt",sep=''),sep="\t",row.names=F,col.names=T,quote=F)
