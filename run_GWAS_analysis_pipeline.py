@@ -150,10 +150,10 @@ class Pipeline(BasePipeline):
 
 
 
-		#step_order = ['hwe', 'LD', 'maf', 'merge', 'het', ibd', '1000_genomes', 'KING', 'PCA'] # order of pipeline if full suite is used
+		step_order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', '1000_genomes', 'KING', 'PCA'] # order of pipeline if full suite is used
 		#step_order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', '1000_genomes', 'KING', 'PCA']
 		#step_order = ['GENanalysis']
-		step_order = ['hwe']
+		
 		# initialize PLINK and KING software
 		general_plink = Software('plink', pipeline_config['plink']['path'])
 		general_king = Software('king', pipeline_config['king']['path'])
@@ -338,7 +338,7 @@ class Pipeline(BasePipeline):
 					Parameter('--bfile', prefixFirstLarge),
 					Parameter('--merge-list', list_of_merge_maf_greater_thresh.name),
 					Parameter('--make-bed'),
-					Parameter('--out', outdir + '/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged')
+					Parameter('--out', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged')
 					)
 
 				# recalculate freq stats for merged set
