@@ -210,7 +210,7 @@ class Pipeline(BasePipeline):
 						hwe_passing[directories] = hwe_passing[directories] + [outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_hweFiltered.hwe']
 				
 				hwe_stats = summary_stats.hwe(dictHWE=hwe_passing, thresh=pipeline_args['hweThresh'], outDir = outdir)
-			
+				hwe_stats.output(outdir + '/' + pipeline_args['projectName'] + '_hweStats.pdf', 'F') # output results to PDF
 				step_order.pop(0)
 
 			
@@ -263,7 +263,7 @@ class Pipeline(BasePipeline):
 								)
 					
 				ld_stats = summary_stats.pruning(dictLD=ld_passing)
-					
+				ld_stats.output(outdir + '/' + pipeline_args['projectName'] + '_ldStats.pdf', 'F') # output results to PDF
 				step_order.pop(0)
 
 			# filters pruned variants by MAF
@@ -315,7 +315,8 @@ class Pipeline(BasePipeline):
 				list_of_merge_maf_less_thresh.flush() # push out buffer
 				
 				maf_stats = summary_stats.minor_allele_freq(dictMAF=maf_passing, thresh=pipeline_args['maf'])
-				
+				maf_stats.output(outdir + '/' + pipeline_args['projectName'] + '_mafStats.pdf', 'F') # output results to PDF
+
 				step_order.pop(0)
 				
 		
@@ -397,6 +398,8 @@ class Pipeline(BasePipeline):
 					Parameter('--out', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged')
 					)
 				
+				het_pdf.output(outdir + '/' + pipeline_args['projectName'] + '_hetStats.pdf', 'F') # output results to PDF
+
 				step_order.pop(0)
 				
 
@@ -424,6 +427,7 @@ class Pipeline(BasePipeline):
 					Parameter('--out', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed')
 					)
 				
+				relatedness_stats.output(outdir + '/' + pipeline_args['projectName'] + '_relatedness.pdf', 'F') # output results to PDF
 				step_order.pop(0)
 	
 
@@ -476,8 +480,8 @@ class Pipeline(BasePipeline):
 				print "running PCA step"
 				#Popen should launch jobs in parallel
 				processes = []
-				processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen', phenoFile_thous_Genesis.name, pipeline_config['R_libraries']]))
-				processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed', phenoFile_Genesis.name, pipeline_config['R_libraries']]))
+				processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen', phenoFile_thous_Genesis.name, pipeline_config['R_libraries']['path']]))
+				processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed', phenoFile_Genesis.name, pipeline_config['R_libraries']['path']]))
 
 				for job in processes:
 					job.wait() # wait for all parallel jobs to finish before proceeding to next step
@@ -506,7 +510,7 @@ class Pipeline(BasePipeline):
 
 				# run a shell script which will submit slurm script
 				try:
-					subprocess.call(['./export_var_slurm_streamlined.sh', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed',pipeline_config['R_libraries'], pipeline_args['usePCs']])
+					subprocess.call(['./export_var_slurm_streamlined.sh', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed',pipeline_config['R_libraries']['path'], pipeline_args['usePCs']])
 				# concatenate all results together with only one line of header
 				except:
 					sys.exit("Problem submitting slurm script, system exiting...")
@@ -527,7 +531,7 @@ class Pipeline(BasePipeline):
 					subprocess.call(['tail', '-n', '+2', '-q', filename], stdout=final_results_merged)
 					final_results_merged.flush()
 				# creates Manhattan and qqplots of data
-				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim', pipeline_config['R_libraries'], pipeline_args['projectName']])
+				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim', pipeline_config['R_libraries']['path'], pipeline_args['projectName']])
 				step_order.pop(0)
 		
 		print "writing results to PDF"
@@ -537,9 +541,4 @@ class Pipeline(BasePipeline):
 		
 		# output PDFs -- need to make this compatible with --reanalyze
 		# put these under each of the steps
-		relatedness_stats.output(outdir + '/' + pipeline_args['projectName'] + '_relatedness.pdf', 'F')
-		paramsThresh.output(outdir + '/' + pipeline_args['projectName'] + '_parameters_and_thresholds.pdf', 'F')
-		hwe_stats.output(outdir + '/' + pipeline_args['projectName'] + '_hweStats.pdf', 'F')
-		ld_stats.output(outdir + '/' + pipeline_args['projectName'] + '_ldStats.pdf', 'F')
-		maf_stats.output(outdir + '/' + pipeline_args['projectName'] + '_mafStats.pdf', 'F')
-		het_pdf.output(outdir + '/' + pipeline_args['projectName'] + '_hetStats.pdf', 'F')
+		paramsThresh.output(outdir + '/' + pipeline_args['projectName'] + '_parameters_and_thresholds.pdf', 'F') # output results to PDF
