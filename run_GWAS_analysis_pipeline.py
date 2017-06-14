@@ -388,7 +388,7 @@ class Pipeline(BasePipeline):
 
 
 				het_dataframe = pd.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged.het', delim_whitespace=True)
-				samples_failing_het, het_pdf = summary_stats.heterozygosity(het_dataframe = het_dataframe, thresh = pipeline_args['hetThresh'], minTresh=pipeline_Args['hetThreshMin'] ,outDir = outdir)
+				samples_failing_het, het_pdf = summary_stats.heterozygosity(het_dataframe = het_dataframe, thresh = pipeline_args['hetThresh'], minThresh=pipeline_Args['hetThreshMin'],outDir = outdir)
 				
 				general_plink.run(
 					Parameter('--bfile', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged'),
