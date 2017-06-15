@@ -28,5 +28,5 @@ for j in split*;
     fam_file=${out}".fam"
     gds_file=${out}".gds"
     #subset_val=$(echo $j|cut -d "." -f 2)
-    Rscript GENESIS_analysis_mod_TB.R $out $pathPLINKprefix $rlib
+    Rscript GENESIS_analysis_mod_TB.R $out $pathPLINKprefix $rlib $pcs
  done
