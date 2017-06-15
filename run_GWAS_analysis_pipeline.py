@@ -389,7 +389,7 @@ class Pipeline(BasePipeline):
 
 
 				het_dataframe = pd.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged.het', delim_whitespace=True)
-				samples_failing_het, het_pdf = summary_stats.heterozygosity(het_dataframe = het_dataframe, thresh = pipeline_args['hetThresh'], minThresh=pipeline_Args['hetThreshMin'],outDir = outdir)
+				samples_failing_het, het_pdf = summary_stats.heterozygosity(het_dataframe = het_dataframe, thresh = pipeline_args['hetThresh'], minThresh=pipeline_args['hetThreshMin'],outDir = outdir)
 				
 				general_plink.run(
 					Parameter('--bfile', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_all_ethnic_groups_merged'),
@@ -435,7 +435,7 @@ class Pipeline(BasePipeline):
 			elif step_order[0] == '1000_genomes':
 				
 				keep_these_snps_in_1000 = open(outdir + '/all_passing_snps_from_project.txt', 'w')
-				bim_file = pandas.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim', names=['chr', 'SNP_name', 'pos1', 'pos2', 'allele1', 'allele2'])
+				bim_file = pd.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim', names=['chr', 'SNP_name', 'pos1', 'pos2', 'allele1', 'allele2'])
 				keep_these_snps_in_1000.write('\n'.join(list(bim_file['SNP_name']))) # input file for PLINK extraction of snps in 1000 genomes
 				keep_these_snps_in_1000.close() # flushes and closes file
 
