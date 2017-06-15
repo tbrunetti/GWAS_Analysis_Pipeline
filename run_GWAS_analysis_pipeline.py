@@ -68,7 +68,7 @@ class Pipeline(BasePipeline):
 			sys.exit("Error!! Input not recognized, please input .ped or .bed PLINK file" )
 
 
-	# creates files to input into plink for samples to keep
+	# create files to input into plink for samples to keep
 	@staticmethod
 	def ethnic_plinks_lists(phenotype, plinkFileName, famFile, removeSamples, outDir):
 		import pandas as pd
@@ -434,10 +434,24 @@ class Pipeline(BasePipeline):
 			
 			elif step_order[0] == '1000_genomes':
 				
+				keep_these_snps_in_1000 = open(outdir + '/all_passing_snps_from_project.txt', 'w')
+				bim_file = pandas.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim', names=['chr', 'SNP_name', 'pos1', 'pos2', 'allele1', 'allele2'])
+				keep_these_snps_in_1000.write('\n'.join(list(bim_file['SNP_name']))) # input file for PLINK extraction of snps in 1000 genomes
+				keep_these_snps_in_1000.close() # flushes and closes file
+
 				no_suffix = pipeline_config['thousand_genomes']['path'][:-4]
+				
+
+				general_plink.run(
+					Parameter('--bfile', no_suffix),
+					Parameter('--extract', keep_these_snps_in_1000.name),
+					Parameter('--make-bed'),
+					Parameter('--out', no_suffix + '_extracted_from_passing_project_SNPs')
+					)
+
 				general_plink.run(
 					Parameter('--bfile', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed'),
-					Parameter('--bmerge', no_suffix + '.bed', no_suffix + '.bim', no_suffix + '.fam'),
+					Parameter('--bmerge', no_suffix + '_extracted_from_passing_project_SNPs.bed', no_suffix + '_extracted_from_passing_project_SNPs.bim', no_suffix + '_extracted_from_passing_project_SNPs.fam'),
 					Parameter('--allow-no-sex'),
 					Parameter('--make-bed'),
 					Parameter('--out', outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen')
