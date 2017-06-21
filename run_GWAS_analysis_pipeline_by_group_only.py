@@ -484,7 +484,7 @@ class Pipeline(BasePipeline):
 							final_results_merged.flush()
 						
 						cases_controls = pd.read_table(outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed.fam', delim_whitespace=True, names=['FID', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])	
-						total_cases_controls = collections.Counter(list(cases_controls))
+						total_cases_controls = collections.Counter(list(cases_controls['AFF']))
 						try:
 							controls = str(total_cases_controls['1'])
 							cases = str(total_cases_controls['2'])
