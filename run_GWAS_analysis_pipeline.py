@@ -1,4 +1,5 @@
 from chunkypipes.components import *
+import collections
 import multiprocessing
 import math
 import datetime
@@ -544,8 +545,17 @@ class Pipeline(BasePipeline):
 				for filename in total_files:
 					subprocess.call(['tail', '-n', '+2', '-q', filename], stdout=final_results_merged)
 					final_results_merged.flush()
+	
+				case_controls = pd.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.fam', delim_whitespace=True, names = ['FID', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
+				total_case_controls = collections.Counter(list(case_controls['AFF']))
+				try:
+					controls = str(total_case_controls['1'])
+					cases = str(total_case_controls['2'])
+				except KeyError:
+					controls = 'NA'
+					cases = 'NA'
 				# creates Manhattan and qqplots of data
-				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim', pipeline_config['R_libraries']['path'], pipeline_args['projectName'], outdir + '/merged_group_files/'])
+				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim', pipeline_config['R_libraries']['path'], pipeline_args['projectName'], outdir + '/merged_group_files/', cases, controls])
 				step_order.pop(0)
 		
 		print "writing results to PDF"
