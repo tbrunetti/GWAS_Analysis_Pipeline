@@ -391,13 +391,11 @@ class Pipeline(BasePipeline):
 			elif step_order[0] == 'KING':
 				
 				print "running KING step"
-
+				phenoFiles = {}
 				for directories in os.listdir(outdir):
 					if (os.path.isdir(os.path.join(outdir, directories))):
-
-						#phenoFile_thous_Genesis = open(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen_phenoGENESIS.txt', 'w')
 						phenoFile_Genesis = open(outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed_phenoGENESIS.txt', 'w')
-
+						phenoFiles[directories] = phenoFile_Genesis.name
 						# run KING and output file as -b prefix name ending in .kin, .kin0 for each group
 						general_king.run(
 							Parameter('-b', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed.bed'),
@@ -407,7 +405,7 @@ class Pipeline(BasePipeline):
 						# generate phenotype table for input into GENESIS setup analysis pipeline WITHOUT 1000 genomes
 						pheno_Genesis = pd.read_table(outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
 						pheno_Genesis[['IID', 'AFF']].to_csv(phenoFile_Genesis.name, sep='\t', index=False, header=False) # format it FID <tab> IID <new line>
-
+						phenoFile_Genesis.close()
 				step_order.pop(0)
 
 
@@ -419,7 +417,7 @@ class Pipeline(BasePipeline):
 				for directories in os.listdir(outdir):
 					if (os.path.isdir(os.path.join(outdir, directories))):
 						#Popen should launch jobs in parallel
-						processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed', phenoFile_Genesis.name, pipeline_config['R_libraries']['path']]))
+						processes.append(subprocess.Popen(['Rscript', 'GENESIS_setup_ANALYSIS_PIPELINE.R', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed', phenoFiles[directories], pipeline_config['R_libraries']['path']]))
 
 				for job in processes:
 					job.wait() # wait for all parallel jobs to finish before proceeding to next step
@@ -427,7 +425,6 @@ class Pipeline(BasePipeline):
 				step_order.pop(0)
 
 
-			# PICK UP HERE
 
 			# this is the step at which analysis will be restarted so as to add PCs from
 			# previous step
