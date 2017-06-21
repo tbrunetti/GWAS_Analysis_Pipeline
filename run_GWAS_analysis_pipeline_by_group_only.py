@@ -429,7 +429,7 @@ class Pipeline(BasePipeline):
 			# this is the step at which analysis will be restarted so as to add PCs from
 			# previous step
 			elif step_order[0] == 'GENanalysis':
-				
+				check_processes = []
 				# stores name of all chunked files
 				total_files = []
 				# stores name of all chunked file by group
@@ -452,13 +452,13 @@ class Pipeline(BasePipeline):
 
 						# run a shell script which will submit slurm script
 						try:
-							subprocess.call(['./export_var_slurm_streamlined_by_group_only.sh',outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed',pipeline_config['R_libraries']['path'], pipeline_args['usePCs']])
+							check_processes.append(subprocess.Popen(['./export_var_slurm_streamlined_by_group_only.sh',outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed',pipeline_config['R_libraries']['path'], pipeline_args['usePCs']]))
 						# concatenate all results together with only one line of header
 						except:
 							sys.exit("Problem submitting slurm script, system exiting...")
 
 
-				## FILE CHECK HERE -- DO NOT PROCEED UNTIL ALL FILES CREATED
+				## FILE CHECK HERE -- DO NOT PROCEED UNTIL ALL FILES CREATED from the final results of the GENESIS!! looking for .results.txt
 
 				while True:
 					if all(os.path.isfile(chunk_file) for chunk_file in total_files):
@@ -478,7 +478,7 @@ class Pipeline(BasePipeline):
 							subprocess.call(['tail', '-n', '+2', '-q', filename], stdout=final_results_merged.name)
 							final_results_merged.flush()
 						# creates Manhattan and qqplots of data
-						subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed.bim', pipeline_config['R_libraries']['path'], pipeline_args['projectName']+'_'+directories])
+						subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed.bim', pipeline_config['R_libraries']['path'], pipeline_args['projectName']+'_'+directories, outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories])
 				
 				step_order.pop(0)
 		
