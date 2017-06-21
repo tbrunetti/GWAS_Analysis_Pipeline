@@ -549,8 +549,8 @@ class Pipeline(BasePipeline):
 				case_controls = pd.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.fam', delim_whitespace=True, names = ['FID', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
 				total_case_controls = collections.Counter(list(case_controls['AFF']))
 				try:
-					controls = str(total_case_controls['1'])
-					cases = str(total_case_controls['2'])
+					controls = str(total_case_controls[1])
+					cases = str(total_case_controls[2])
 				except KeyError:
 					controls = 'NA'
 					cases = 'NA'
