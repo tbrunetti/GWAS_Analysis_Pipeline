@@ -3,7 +3,7 @@ args <- commandArgs(trailingOnly = T)
 
 final_merged_text = args[1]
 final_bim = args[2]
-
+output_path = args[5]
 library("qqman", lib.loc=args[3])
 
 dat.info<-read.delim(final_merged_text)
@@ -32,7 +32,7 @@ observed <- sort(dat.info.out$Score.pval)
 lobs <- -(log10(observed))
 expected <- c(1:length(observed)) 
 lexp <- -(log10(expected / (length(expected)+1)))
-bmp(filename="qqplot_typed_overlap_allcohort_new.bmp", width=800, height=800, bg="white", type="cairo")
+bmp(filename=paste(output_path, "qqplot_typed_overlap_allcohort_new.bmp", sep='_'), width=800, height=800, bg="white", type="cairo")
 #pdf("qqplot_typed_overlap_allcohort.pdf", width=6, height=6)
 plot(c(0,10), c(0,10), col="red", lwd=3, type="l", xlab="Expected (-logP)", ylab="Observed (-logP)", xlim=c(0,10), ylim=c(0,10), las=1, xaxs="i", yaxs="i", bty="l")
 points(lexp, lobs, pch=23, cex=.4, bg="black") 
@@ -44,7 +44,7 @@ l = median(chisq2,na.rm=T)/qchisq(0.5,1)#lambda1
 
 #manhattan plot
 library(qqman)
-bmp(filename="manhattan_typed_overlap_allcohort_new.bmp", width=800, height=600, bg="white", type="cairo")
+bmp(filename=paste(output_path, "manhattan_typed_overlap_allcohort_new.bmp", sep='_'), width=800, height=600, bg="white", type="cairo")
 #pdf("manhattan_typed_overlap_allcohort.pdf",width=21,height=10)
 par(font.axis = 2)
 manhattan(dat.info.out,chr = "chr", bp = "POS", p = "Score.pval", snp = "snpID",col = c("gray60", "gray10"), chrlabs = NULL,highlight = NULL, logp = TRUE,suggestiveline = F, genomewideline = F,ylim=c(0,10),main=paste("Association analysis: ", args[4], sep =' '))
@@ -55,7 +55,7 @@ observed <- sort(dat.info.out.common$Score.pval)
 lobs <- -(log10(observed))
 expected <- c(1:length(observed)) 
 lexp <- -(log10(expected / (length(expected)+1)))
-bmp(filename="qqplot_typed_overlap_allcohort_common_new.bmp", width=800, height=800, bg="white", type="cairo")
+bmp(filename=paste(output_path, "qqplot_typed_overlap_allcohort_common_new.bmp", sep='_'), width=800, height=800, bg="white", type="cairo")
 #pdf("qqplot_typed_overlap_allcohort_common.pdf", width=6, height=6)
 plot(c(0,10), c(0,10), col="red", lwd=3, type="l", xlab="Expected (-logP)", ylab="Observed (-logP)", xlim=c(0,10), ylim=c(0,10), las=1, xaxs="i", yaxs="i", bty="l")
 points(lexp, lobs, pch=23, cex=.4, bg="black") 
@@ -69,7 +69,7 @@ dev.off()
 
 #manhattan plot common
 library(qqman)
-bmp(filename="manhattan_typed_overlap_allcohort_common_new.bmp", width=800, height=600, bg="white", type="cairo")
+bmp(filename=paste(output_path, "manhattan_typed_overlap_allcohort_common_new.bmp", sep='_'), width=800, height=600, bg="white", type="cairo")
 #pdf("manhattan_typed_overlap_allcohort_common_new.pdf",width=21,height=10)
 par(font.axis = 2)
 manhattan(dat.info.out.common,chr = "chr", bp = "POS", p = "Score.pval", snp = "snpID",col = c("gray60", "gray10"), chrlabs = NULL,highlight = NULL, logp = TRUE,suggestiveline = F, genomewideline = F, ylim=c(0,10) ,main=paste("Association analysis: ", args[4], 'common variants', sep =' '))
@@ -80,7 +80,7 @@ observed <- sort(dat.info.out.rare$Score.pval)
 lobs <- -(log10(observed))
 expected <- c(1:length(observed)) 
 lexp <- -(log10(expected / (length(expected)+1)))
-bmp(filename="qqplot_typed_overlap_allcohort_rare_new.bmp", width=800, height=800, bg="white", type="cairo")
+bmp(filename=paste(output_path, "qqplot_typed_overlap_allcohort_rare_new.bmp", sep='_'), width=800, height=800, bg="white", type="cairo")
 #pdf("qqplot_typed_overlap_allcohort_rare.pdf", width=6, height=6)
 plot(c(0,10), c(0,10), col="red", lwd=3, type="l", xlab="Expected (-logP)", ylab="Observed (-logP)", xlim=c(0,10), ylim=c(0,10), las=1, xaxs="i", yaxs="i", bty="l")
 points(lexp, lobs, pch=23, cex=.4, bg="black") 
@@ -94,7 +94,7 @@ dev.off()
 
 #manhattan plot rare
 library(qqman)
-bmp(filename="manhattan_typed_overlap_allcohort_rare_new.bmp", width=800, height=600, bg="white", type="cairo")
+bmp(filename=paste(output_path, "manhattan_typed_overlap_allcohort_rare_new.bmp", sep='_'), width=800, height=600, bg="white", type="cairo")
 #pdf("manhattan_typed_overlap_allcohort_rare.pdf",width=21,height=10)
 par(font.axis = 2)
 manhattan(dat.info.out.rare,chr = "chr", bp = "POS", p = "Score.pval", snp = "snpID",col = c("gray60", "gray10"), chrlabs = NULL,highlight = NULL, logp = TRUE,suggestiveline = F, genomewideline = F, ylim=c(0,10) ,main=paste("Association analysis: ", args[4], 'rare variants', sep =' '))
@@ -103,7 +103,7 @@ manhattan(dat.info.out.rare,chr = "chr", bp = "POS", p = "Score.pval", snp = "sn
 
 #qq plot all snps with CI
 
-bmp(filename="qqplot_typed_overlap_allcohort_new_with_CI.bmp", width=800, height=800, bg="white", type="cairo")
+bmp(filename=paste(output_path, "qqplot_typed_overlap_allcohort_new_with_CI.bmp", sep='_'), width=800, height=800, bg="white", type="cairo")
 
 ## obs <- readfile; p-values only
 ## read in your p-values,
@@ -152,7 +152,7 @@ dev.off()
 
 
 # qq common with CI
-bmp(filename="qqplot_typed_overlap_allcohort_common_new_with_CI.bmp", width=800, height=800, bg="white", type="cairo")
+bmp(filename=paste(output_path, "qqplot_typed_overlap_allcohort_common_new_with_CI.bmp", sep='_'), width=800, height=800, bg="white", type="cairo")
 
 obs<- dat.info.out.common$Score.pval
 N <- 1000000 ## number of p-values
@@ -198,7 +198,7 @@ dev.off()
 
 
 # qq plot rare with CI
-bmp(filename="qqplot_typed_overlap_allcohort_rare_new_with_CI.bmp", width=800, height=800, bg="white", type="cairo")
+bmp(filename=paste(output_path, "qqplot_typed_overlap_allcohort_rare_new_with_CI.bmp", sep='_'), width=800, height=800, bg="white", type="cairo")
 
 obs<- dat.info.out.rare$Score.pval
 N <- 1000000 ## number of p-values
