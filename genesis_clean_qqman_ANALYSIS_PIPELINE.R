@@ -4,6 +4,8 @@ args <- commandArgs(trailingOnly = T)
 final_merged_text = args[1]
 final_bim = args[2]
 output_path = args[5]
+total_cases = args[6]
+total_controls = args[7]
 library("qqman", lib.loc=args[3])
 
 dat.info<-read.delim(final_merged_text)
@@ -47,7 +49,7 @@ library(qqman)
 bmp(filename=paste(output_path, "manhattan_typed_overlap_allcohort_new.bmp", sep='_'), width=800, height=600, bg="white", type="cairo")
 #pdf("manhattan_typed_overlap_allcohort.pdf",width=21,height=10)
 par(font.axis = 2)
-manhattan(dat.info.out,chr = "chr", bp = "POS", p = "Score.pval", snp = "snpID",col = c("gray60", "gray10"), chrlabs = NULL,highlight = NULL, logp = TRUE,suggestiveline = F, genomewideline = F,ylim=c(0,10),main=paste("Association analysis: ", args[4], sep =' '))
+manhattan(dat.info.out,chr = "chr", bp = "POS", p = "Score.pval", snp = "snpID",col = c("gray60", "gray10"), chrlabs = NULL,highlight = NULL, logp = TRUE,suggestiveline = F, genomewideline = F,ylim=c(0,10),main=paste("Association analysis: ", args[4], '\n', 'cases:', total_cases, 'and controls:', total_controls, sep =' '))
 dev.off()
 
 #common qq plot
@@ -72,7 +74,7 @@ library(qqman)
 bmp(filename=paste(output_path, "manhattan_typed_overlap_allcohort_common_new.bmp", sep='_'), width=800, height=600, bg="white", type="cairo")
 #pdf("manhattan_typed_overlap_allcohort_common_new.pdf",width=21,height=10)
 par(font.axis = 2)
-manhattan(dat.info.out.common,chr = "chr", bp = "POS", p = "Score.pval", snp = "snpID",col = c("gray60", "gray10"), chrlabs = NULL,highlight = NULL, logp = TRUE,suggestiveline = F, genomewideline = F, ylim=c(0,10) ,main=paste("Association analysis: ", args[4], 'common variants', sep =' '))
+manhattan(dat.info.out.common,chr = "chr", bp = "POS", p = "Score.pval", snp = "snpID",col = c("gray60", "gray10"), chrlabs = NULL,highlight = NULL, logp = TRUE,suggestiveline = F, genomewideline = F, ylim=c(0,10) ,main=paste("Association analysis: ", args[4], 'common variants', '\n', 'cases:', total_cases, 'and controls:', total_controls, sep =' '))
 dev.off()
 
 #rare
@@ -97,7 +99,7 @@ library(qqman)
 bmp(filename=paste(output_path, "manhattan_typed_overlap_allcohort_rare_new.bmp", sep='_'), width=800, height=600, bg="white", type="cairo")
 #pdf("manhattan_typed_overlap_allcohort_rare.pdf",width=21,height=10)
 par(font.axis = 2)
-manhattan(dat.info.out.rare,chr = "chr", bp = "POS", p = "Score.pval", snp = "snpID",col = c("gray60", "gray10"), chrlabs = NULL,highlight = NULL, logp = TRUE,suggestiveline = F, genomewideline = F, ylim=c(0,10) ,main=paste("Association analysis: ", args[4], 'rare variants', sep =' '))
+manhattan(dat.info.out.rare,chr = "chr", bp = "POS", p = "Score.pval", snp = "snpID",col = c("gray60", "gray10"), chrlabs = NULL,highlight = NULL, logp = TRUE,suggestiveline = F, genomewideline = F, ylim=c(0,10) ,main=paste("Association analysis: ", args[4], 'rare variants', '\n', 'cases:', total_cases, 'and controls:', total_controls, sep =' '))
 #dev.off()
 
 
