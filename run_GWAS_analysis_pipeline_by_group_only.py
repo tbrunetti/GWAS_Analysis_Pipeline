@@ -471,11 +471,11 @@ class Pipeline(BasePipeline):
 
 				for directories in os.listdir(outdir):
 					if (os.path.isdir(os.path.join(outdir, directories))):
-						final_results_merged = open(outdir +'/'+ directories + '_final_results_merged.txt', 'a+')
+						final_results_merged = open(outdir +'/'+ directories + '_final_results_merged.txt', 'w')
 						subprocess.call(['head', '-n', '1', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed_split00.results.txt'], stdout=final_results_merged.name)
 						final_results_merged.flush()
 						for filename in group_files[directories]:
-							subprocess.call(['tail', '-n', '+2', '-q', filename], stdout=final_results_merged)
+							subprocess.call(['tail', '-n', '+2', '-q', filename], stdout=final_results_merged.name)
 							final_results_merged.flush()
 						# creates Manhattan and qqplots of data
 						subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed.bim', pipeline_config['R_libraries']['path'], pipeline_args['projectName']+'_'+directories])
