@@ -471,6 +471,10 @@ class Pipeline(BasePipeline):
 
 				for directories in os.listdir(outdir):
 					if (os.path.isdir(os.path.join(outdir, directories))):
+						try: # delete this file if it already exists so as not to append pre-existing data
+							os.remove(outdir +'/'+ directories + '_final_results_merged.txt')
+						except OSError:
+							pass
 						final_results_merged = open(outdir +'/'+ directories + '_final_results_merged.txt', 'w')
 						subprocess.call(['head', '-n', '1', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed_split00.results.txt'], stdout=final_results_merged.name)
 						final_results_merged.flush()
