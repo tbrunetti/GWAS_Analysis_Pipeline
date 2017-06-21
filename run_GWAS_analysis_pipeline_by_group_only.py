@@ -477,7 +477,7 @@ class Pipeline(BasePipeline):
 						except OSError:
 							pass
 						final_results_merged = open(outdir +'/'+ directories + '_final_results_merged.txt', 'w')
-						subprocess.call(['head', '-n', '1', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed_split00.results.txt'], stdout=final_results_merged.name)
+						subprocess.call(['head', '-n', '1', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed_split00.results.txt'], stdout=final_results_merged)
 						final_results_merged.flush()
 						for filename in group_files[directories]:
 							subprocess.call(['tail', '-n', '+2', '-q', filename], stdout=final_results_merged.name)
