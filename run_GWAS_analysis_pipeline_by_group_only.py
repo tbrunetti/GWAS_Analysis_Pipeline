@@ -480,7 +480,7 @@ class Pipeline(BasePipeline):
 						subprocess.call(['head', '-n', '1', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed_split00.results.txt'], stdout=final_results_merged)
 						final_results_merged.flush()
 						for filename in group_files[directories]:
-							subprocess.call(['tail', '-n', '+2', '-q', filename], stdout=final_results_merged.name)
+							subprocess.call(['tail', '-n', '+2', '-q', filename], stdout=final_results_merged)
 							final_results_merged.flush()
 						
 						cases_controls = pd.read_table(outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed.fam', delim_whitespace=True, names=['FID', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])	
