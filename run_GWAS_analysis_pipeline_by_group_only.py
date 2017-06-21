@@ -1,4 +1,5 @@
 from chunkypipes.components import *
+import collections
 import multiprocessing
 import math
 import datetime
