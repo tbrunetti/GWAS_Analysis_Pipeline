@@ -545,7 +545,7 @@ class Pipeline(BasePipeline):
 					subprocess.call(['tail', '-n', '+2', '-q', filename], stdout=final_results_merged)
 					final_results_merged.flush()
 				# creates Manhattan and qqplots of data
-				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim', pipeline_config['R_libraries']['path'], pipeline_args['projectName']])
+				subprocess.call(['Rscript', 'genesis_clean_qqman_ANALYSIS_PIPELINE.R', final_results_merged.name, outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.bim', pipeline_config['R_libraries']['path'], pipeline_args['projectName'], outdir + '/merged_group_files/'])
 				step_order.pop(0)
 		
 		print "writing results to PDF"
