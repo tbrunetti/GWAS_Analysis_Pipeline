@@ -17,10 +17,10 @@ bim=$pathPLINKprefix".bim"
 echo $bim
 split -d -l 100000 $bim $pathPLINKprefix"_split"
   #reattach the header to each and clean up
-for j in $bim"_split"*;
+for j in $pathPLINKprefix"_split"*;
   do
     echo $j
-    out=${pathPLINKprefix}$(echo $j)
+    out=$j
     echo $out
     /homelink/brunettt/TOOLS/plink --bfile ${pathPLINKprefix} --extract $j --make-bed --out $out
     bed_file=${out}".bed"
