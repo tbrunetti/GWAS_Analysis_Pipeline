@@ -213,5 +213,13 @@ This call can be modified with any of the optional parameters that the pipeline 
 Note:  If you choose **NOT** to run this pipeline on a HPC with slurm, the pipeline cannot utilize the GENanalysis step.  This is because due to potentially large space and memory requirements for this part of the analysis, the power of the HPC is utilized to streamline this process.  However, the individual R scripts have been provided so that the user can download these and modify and run them on their own personal computer without the HPC dependency.  
 
 
+
+## run_GWAS_analysis_pipeline.py VS run_GWAS_analysis_pipeline_by_group_only.py
+--------------------------------------------------------------------------------
+There are 3 different pipelines the user can choose to install from this repository:
+1. run_GWAS_analysis_pipeline.py
+2. run_GWAS_analysis_pipeline_by_group_only.py
+3. run_GWAS_analysis_pipeline_parallelized.py (in development)
+No matter which one that is chosen, each needs to be configured and installed.  The directions are the same as above no matter which one the user chooses.  The biggest difference between 1 and 2 is how the data is split for analysis and whether concordance is checked against an LD-pruned set of SNPs in the phase3 1000 genomes consortium.
 ##  Output and Deliverables
 ---------------------------
