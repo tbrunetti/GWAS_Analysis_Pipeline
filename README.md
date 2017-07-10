@@ -222,13 +222,17 @@ There are 3 different pipelines the user can choose to install from this reposit
 3. run_GWAS_analysis_pipeline_parallelized.py (in development)  
 No matter which one is chosen, each needs to be configured and installed independently.  The directions are the same as above no matter which one the user chooses.  The biggest difference between 1 and 2 is how the data is split for analysis and whether concordance is checked against an LD-pruned set of SNPs in the phase3 1000 genomes consortium.  
 
-The general flow for using 1 (run_GWAS_analysis_pipeline.py) is as follows:
+The general flow for using pipeline 1 (run_GWAS_analysis_pipeline.py) is as follows:
 
 <p align="center">
 <img src="https://github.com/tbrunetti/GWAS_Analysis_Pipeline/blob/master/standard_run_GWAS_pipeline.png"/>
+</p>  
+
+The general flow for using pipeline 2 (run_GWAS_analysis_pipeline_by_group_only.py) is as follows:
+
+<p align="center">
+<img src="https://github.com/tbrunetti/GWAS_Analysis_Pipeline/blob/master/run_GWAS_pipeline_by_group_flow.png"/>
 </p>
-
-
 
 ##  Output and Deliverables
 ---------------------------
