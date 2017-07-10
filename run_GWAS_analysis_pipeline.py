@@ -37,8 +37,8 @@ class Pipeline(BasePipeline):
 		parser.add_argument('--sampleRemoval', default=None, help='Full path for samples to remove before analysis (i.e. those with sex discrepenences, poor QC, etc...) see readme for more details on format')
 		parser.add_argument('--outDir', default=os.getcwd(), type=str, help='[default=current working directory] Full path of existing directory to output results')
 		parser.add_argument('--projectName', default=str(datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")), type=str, help='[default=date time stamp] Name of project')
-		parser.add_argument('--startStep', default='hwe', type=str, help='The part of the pipeline you would like to start with')
-		parser.add_argument('--endStep', default=None, type=str, help='Point of the pipeline where you would like to stop analysis, if none specified, stops after start step is completed')
+		parser.add_argument('--startStep', default='hwe', type=str, help='The part of the pipeline you would like to start with; if user does not specify this parameter, begins analyis at Hardy-Weinberg equilibrium')
+		parser.add_argument('--endStep', default=None, type=str, help='Point of the pipeline where you would like to stop analysis, if none specified, stops after PCA is done or if GENanalysis is specified as start, finishes after GENanalysis is done')
 		parser.add_argument('--hweThresh', default=1e-6, help='Filters out SNPs that are smaller than this threshold due to liklihood of genotyping error')
 		parser.add_argument('--LDmethod', default='indep', type=str, help='[default=indep, options:indep, indep-pairwise, indep-pairphase] Method to calculate linkage disequilibrium')
 		parser.add_argument('--VIF', default=2, type=int, help='[default=2] variant inflation factor for indep method LD pruning')
@@ -53,7 +53,18 @@ class Pipeline(BasePipeline):
 
 	@staticmethod
 	def check_steps(order, start, stop):
-		pass
+		if start == 'hwe' and stop == None:
+			return order
+		elif start != 'GENanalysis': # reanalyze flag should be used here
+			index_of_start =order.index(start)
+			if stop == None:
+				return order[index_of_start:]
+			else:
+				index_of_end = order.index(stop)
+				return [index_of_start:index_of_end+1]
+		elif start == 'GENanalysis': # reanalyze flag should be used here
+			return ['GENanalysis']	
+
 
 	# checks the type of PLINK file input
 	@staticmethod
@@ -150,8 +161,14 @@ class Pipeline(BasePipeline):
 
 
 
+		step_order = check_steps(
+			order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', '1000_genomes', 'KING', 'PCA'], 
+			start = pipeline_args['startStep'],
+			stop = pipeline_args['endStep']
+			)
+		
 
-		step_order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', '1000_genomes', 'KING', 'PCA'] # order of pipeline if full suite is used
+		#step_order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', '1000_genomes', 'KING', 'PCA'] # order of pipeline if full suite is used
 		#step_order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', '1000_genomes', 'KING', 'PCA']
 		#step_order = ['GENanalysis']
 		
