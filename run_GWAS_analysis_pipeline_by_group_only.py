@@ -22,9 +22,6 @@ class Pipeline(BasePipeline):
 			'king':{
 				'path':'Full path to KING executable'
 			},
-			'thousand_genomes':{
-				'path': 'Full path to PLINK BED file format LD pruned phase 3 1000 genomes file'
-			},
 			'R_libraries':{
 				'path': 'Full path to directory where R libraries are stored'
 			}
@@ -53,7 +50,18 @@ class Pipeline(BasePipeline):
 
 	@staticmethod
 	def check_steps(order, start, stop):
-		pass
+		if start == 'hwe' and stop == None:
+			return order
+		elif start != 'GENanalysis': # reanalyze flag should be used here
+			index_of_start =order.index(start)
+			if stop == None:
+				return order[index_of_start:]
+			else:
+				index_of_end = order.index(stop)
+				return [index_of_start:index_of_end+1]
+		elif start == 'GENanalysis': # reanalyze flag should be used here
+			return ['GENanalysis']	
+
 
 	# checks the type of PLINK file input
 	@staticmethod
@@ -146,11 +154,15 @@ class Pipeline(BasePipeline):
 			#	destination=pipeline_args['outDir'] + '/' + pipeline_args['projectName'] +'/stdout.log',
 			#	destination_stderr=pipeline_args['outDir'] + '/' + pipeline_args['projectName'] + '/stderr.log')
 
+		
+		step_order = check_steps(
+			order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', 'KING', 'PCA'], 
+			start = pipeline_args['startStep'],
+			stop = pipeline_args['endStep']
+			)
 
 
-
-		step_order = ['hwe', 'LD', 'maf', 'het', 'ibd', 'KING', 'PCA'] # order of pipeline if full suite is used
-		#step_order = ['hwe', 'LD', 'maf', 'het', 'ibd', '1000_genomes', 'KING', 'PCA']
+		#step_order = ['hwe', 'LD', 'maf', 'het', 'ibd', 'KING', 'PCA'] # order of pipeline if full suite is used
 		#step_order = ['GENanalysis']
 		
 		# initialize PLINK and KING software
