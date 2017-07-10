@@ -219,7 +219,16 @@ Note:  If you choose **NOT** to run this pipeline on a HPC with slurm, the pipel
 There are 3 different pipelines the user can choose to install from this repository:
 1. run_GWAS_analysis_pipeline.py
 2. run_GWAS_analysis_pipeline_by_group_only.py
-3. run_GWAS_analysis_pipeline_parallelized.py (in development)
-No matter which one that is chosen, each needs to be configured and installed.  The directions are the same as above no matter which one the user chooses.  The biggest difference between 1 and 2 is how the data is split for analysis and whether concordance is checked against an LD-pruned set of SNPs in the phase3 1000 genomes consortium.
+3. run_GWAS_analysis_pipeline_parallelized.py (in development)  
+No matter which one is chosen, each needs to be configured and installed independently.  The directions are the same as above no matter which one the user chooses.  The biggest difference between 1 and 2 is how the data is split for analysis and whether concordance is checked against an LD-pruned set of SNPs in the phase3 1000 genomes consortium.  
+
+The general flow for using 1 (run_GWAS_analysis_pipeline.py) is as follows:
+
+<p align="center">
+<img src="https://github.com/tbrunetti/GWAS_Analysis_Pipeline/blob/master/standard_run_GWAS_pipeline.png"/>
+</p>
+
+
+
 ##  Output and Deliverables
 ---------------------------
