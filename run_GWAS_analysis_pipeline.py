@@ -61,7 +61,7 @@ class Pipeline(BasePipeline):
 				return order[index_of_start:]
 			else:
 				index_of_end = order.index(stop)
-				return [index_of_start:index_of_end+1]
+				return order[index_of_start:index_of_end+1]
 		elif start == 'GENanalysis': # reanalyze flag should be used here
 			return ['GENanalysis']	
 
