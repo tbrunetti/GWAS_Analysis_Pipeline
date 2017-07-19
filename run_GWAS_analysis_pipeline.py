@@ -71,7 +71,7 @@ class Pipeline(BasePipeline):
 	def check_plink_format(plinkFile, plink):
 		if plinkFile[-4:].lower() == '.ped':
 			print "Input .ped, converting to binary"
-			convert = subprocess.call(['./'+str(plink), '--file', str(plinkFile[:-4]), '--make-bed', '--out', str(plinkFile[:-4])])
+			convert = subprocess.call([str(plink), '--file', str(plinkFile[:-4]), '--make-bed', '--out', str(plinkFile[:-4])])
 		
 		elif plinkFile[-4:].lower() == '.bed':
 			print "Input seems to follow bed format"
@@ -161,7 +161,7 @@ class Pipeline(BasePipeline):
 
 
 
-		step_order = check_steps(
+		step_order = self.check_steps(
 			order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', '1000_genomes', 'KING', 'PCA'], 
 			start = pipeline_args['startStep'],
 			stop = pipeline_args['endStep']
