@@ -146,7 +146,7 @@ def heterozygosity(het_dataframe, thresh, minThresh, outDir):
 	pdf.line(20, 32, 190, 32)
 
 	sample_fails = open(outDir + '/samples_failing_heterozygosity.txt', 'w')
-	fail_het = het_dataframe.loc[((het_dataframe['F'] > thresh) & (het_dataframe['F'] < minThresh))]
+	fail_het = het_dataframe.loc[((het_dataframe['F'] > thresh) | (het_dataframe['F'] < minThresh))]
 	fail_het[['FID', 'IID']].to_csv(sample_fails.name, sep='\t', index=False, header=False) # format it FID <tab> IID <new line>
 
 
