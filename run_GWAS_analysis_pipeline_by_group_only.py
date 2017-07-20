@@ -156,7 +156,7 @@ class Pipeline(BasePipeline):
 
 		
 		step_order = self.check_steps(
-			order = ['hwe', 'LD', 'maf', 'merge', 'het', 'ibd', 'KING', 'PCA'], 
+			order = ['hwe', 'LD', 'maf', 'het', 'ibd', 'KING', 'PCA'], 
 			start = pipeline_args['startStep'],
 			stop = pipeline_args['endStep']
 			)
