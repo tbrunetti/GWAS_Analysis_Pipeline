@@ -411,7 +411,10 @@ class Pipeline(BasePipeline):
 					if (os.path.isdir(os.path.join(outdir, directories))):
 						keep_these_snps_in_1000 = open(outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories + '_all_passing_snps_from_project.txt', 'w')
 						bim_file = pd.read_table(outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed.bim', names=['chr', 'SNP_name', 'pos1', 'pos2', 'allele1', 'allele2'])
-						keep_these_snps_in_1000.write('\n'.join(list(bim_file['SNP_name']))) # input file for PLINK extraction of snps in 1000 genomes
+						bim_file_1000 = pd.read_table(pipeline_config['thousand_genomes']['path'][:-4]+'.bim',  names=['chr', 'SNP_name', 'pos1', 'pos2', 'allele1', 'allele2'])
+						extract_for_PCA = list(set(list(bim_qfile_1000['SNP_name'])) & set(list(bim_file['SNP_name'])))
+
+						keep_these_snps_in_1000.write('\n'.join(extract_for_PCA)) # input file for PLINK extraction of snps in 1000 genomes
 						keep_these_snps_in_1000.close() # flushes and closes file
 
 						no_suffix = pipeline_config['thousand_genomes']['path'][:-4]
