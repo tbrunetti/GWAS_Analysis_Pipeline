@@ -425,13 +425,20 @@ class Pipeline(BasePipeline):
 
 						general_plink.run(
 							Parameter('--bfile', outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed'),
+							Parameter('--extract', keep_these_snps_in_1000.name),
+							Parameter('--make-bed'),
+							Parameter('--out', outdir + '/' + directories + '/extracted_from_passing_' + directories +'_SNPs_for_use_with_1000_merge')
+							)
+
+						general_plink.run(
+							Parameter('--bfile', outdir + '/' + directories + '/extracted_from_passing_' + directories +'_SNPs_for_use_with_1000_merge'),
 							Parameter('--bmerge',no_suffix + '_extracted_from_passing_' + directories +'_SNPs.bed', no_suffix + '_extracted_from_passing_' + directories +'_SNPs.bim', no_suffix + '_extracted_from_passing_' + directories +'_SNPs.fam'),
 							Parameter('--allow-no-sex'),
 							Parameter('--make-bed'),
 							Parameter('--out',  outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +'_maf_greater_thresh_hetFiltered_dups_removed_thousGen')
 							)
 
-	
+					step_order.pop(0)
 
 			elif step_order[0] == 'KING':
 				
@@ -451,6 +458,7 @@ class Pipeline(BasePipeline):
 						pheno_Genesis = pd.read_table(outdir + '/' + directories + '/' + reduced_plink_name+ '_' + directories +  '_maf_greater_thresh_hetFiltered_dups_removed_thousGen.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
 						pheno_Genesis[['IID', 'AFF']].to_csv(phenoFile_Genesis.name, sep='\t', index=False, header=False) # format it FID <tab> IID <new line>
 						phenoFile_Genesis.close()
+				
 				step_order.pop(0)
 
 
