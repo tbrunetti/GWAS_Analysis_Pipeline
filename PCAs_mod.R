@@ -1,10 +1,17 @@
-load('/home/tonya/Desktop/CAAPA_MEGA_passed_QC_final_converted_PROAR_maf_greater_thresh_hetFiltered_dups_removed_thousGen_GENESIS')
+# loaded from genesis setup script in GWAS_analysis_pipeline.py
+load('/home/tonya/Desktop/CAAPA_MEGA_passed_QC_final_converted_PROAR_maf_greater_thresh_hetFiltered_dups_removed_thousGen_GENESIS') 
 get_dataframe <- pData(scanAnnot)
 write.table(get_dataframe, file='/home/tonya/Desktop/get_dataframe.txt', sep = '\t')
 
-pcs_with_pops <- read.table('/home/tonya/Desktop/merged_pop_PROAR_CAAPA.txt')
+###---------------------------now, get_dataframe.txt needs to be merge/add populations---------------------------------------
 
-pdf("test_PCA_plots.pdf",onefile=T)
+# pcs_with_pops is output of get_dataframe with the population column added
+pcs_with_pops <- read.table('/home/tonya/Desktop/merged_pop_PROAR_CAAPA.txt') #headers should be scanID, pc1, pc2...,pcn, pheno, population
+
+population_name = 'PROAR' # must match one listed in pcs_with_pops table in population column
+
+
+pdf(paste(population_name, "_PCA_plots.pdf", sep=''),onefile=T)
 par(mfrow=c(1,1))
 par(mar=c(5,4.5,0,2))
 par(omi=c(.5,0,.5,0))
@@ -36,8 +43,8 @@ axis(1,at=subset_data$PC,labels=subset_data$PC)
 
 
 # Assign experimental vs TGP
-pcs_with_pops$group[pcs_with_pops$population=="PROAR"] <- "PROAR"
-pcs_with_pops$group[pcs_with_pops$population!="PROAR"] <- "TGP"
+pcs_with_pops$group[pcs_with_pops$population==population_name] <- population_name
+pcs_with_pops$group[pcs_with_pops$population!=population_name] <- "TGP"
 pcs_with_pops$group <- as.factor(pcs_with_pops$group)
 
 # color order for scatter plots
@@ -105,6 +112,8 @@ legend("bottomleft", levels(pcs_with_pops$group),pch=c(17,20),pt.cex=0.5,cex=0.5
 
 #Boxplots centered on mean African ancestry
 PCA_pops_AFR = subset(pcs_with_pops,population=="AFR")
+
+
 #boxplot for PC1
 m11=mean(PCA_pops_AFR$pc1)
 s11=sd(PCA_pops_AFR$pc1)
@@ -152,7 +161,7 @@ abline(h =m15+(6*s15), col = "black", lty=2, lwd=1,xpd=F)
 
 
 #Determine outliers
-BASS_only = subset(pcs_with_pops,population=="PROAR")
+BASS_only = subset(pcs_with_pops,population==population_name)
 BASS_only$PC1_outlier[as.numeric(BASS_only$pc1)<(m11-(6*s11)) | as.numeric(BASS_only$pc1)>(m11+(6*s11))] <- 1
 BASS_only$PC1_outlier[as.numeric(BASS_only$pc1)>=(m11-(6*s11)) & as.numeric(BASS_only$pc1)<=(m11+(6*s11))] <- 0
 BASS_only$PC2_outlier[as.numeric(BASS_only$pc2)<(m12-(10*s12)) | as.numeric(BASS_only$pc2)>(m12+(10*s12))] <- 1
@@ -165,9 +174,9 @@ BASS_only$PC5_outlier[as.numeric(BASS_only$pc5)<(m15-(6*s15)) | as.numeric(BASS_
 BASS_only$PC5_outlier[as.numeric(BASS_only$pc5)>=(m15-(6*s15)) & as.numeric(BASS_only$pc5)<=(m15+(6*s15))] <- 0
 
 BASS_outliers = subset(BASS_only,PC1_outlier==1 | PC2_outlier==1 | PC3_outlier==1 | PC4_outlier==1 | PC5_outlier==1)
-write.table(BASS_outliers,"PROAR_outliers.txt",row.names=F,col.names=T,quote=F,sep="\t")
+write.table(BASS_outliers,paste(population_name,"_outliers.txt", sep=''),row.names=F,col.names=T,quote=F,sep="\t")
 
-BASS_outliers <- read.table("PROAR_outliers.txt",header=T,all=T,sep="\t")
+BASS_outliers <- read.table(paste(population_name,"_outliers.txt", sep=''),header=T,all=T,sep="\t")
 BASS_outliers2 = subset(BASS_outliers,select=c("scanID","pheno","PC1_outlier","PC2_outlier"))
 
 BASS_outliers2$EXTRACOL <- 1
@@ -175,7 +184,7 @@ BASS2 <- merge(BASS_only,BASS_outliers2,all=T)
 BASSfin <- BASS2[is.na(BASS2$EXTRACOL),]
 BASSfin$EXTRACOL <- NULL
 BASS_final = subset(BASSfin,select=c("scanID","pc1","pc2","pc3","pc4","pc5"))
-write.table(BASS_final,"PROAR_PCs_No_Outliers.txt",row.names=F,col.names=T,quote=F,sep="\t")
+write.table(BASS_final,paste(population_name,"_PCs_No_Outliers.txt", sep=''),row.names=F,col.names=T,quote=F,sep="\t")
 
 
 #Create table of outliers
