@@ -507,11 +507,13 @@ class Pipeline(BasePipeline):
 					)
 
 				# generate phenotype table for input into GENESIS setup analysis pipeline with 1000 genomes
-				pheno_1000_Genesis = pd.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
+				pheno_1000_Genesis = pd.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed_thousGen.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'], dtype=str)
+				pheno_1000_Genesis.loc[(pheno_1000_Genesis['AFF']!='1') & (pheno_1000_Genesis['AFF']!='2'), 'AFF']='NA' # required to put NA for association analysis downstream or miscalculates and fails
 				pheno_1000_Genesis[['IID', 'AFF']].to_csv(phenoFile_thous_Genesis.name, sep='\t', index=False, header=False) # format it FID <tab> IID <new line>
 				
 				# generate phenotype table for input into GENESIS setup analysis pipeline WITHOUT 1000 genomes
-				pheno_Genesis = pd.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'])
+				pheno_Genesis = pd.read_table(outdir + '/merged_group_files/' + reduced_plink_name + '_maf_greater_thresh_hetFiltered_all_ethnic_groups_merged_dups_removed.fam', delim_whitespace=True, names = ['FID,', 'IID', 'PAT', 'MAT', 'SEX', 'AFF'], dtype=str)
+				pheno_Genesis.loc[(pheno_Genesis['AFF']!='1') & (pheno_Genesis['AFF']!='2'), 'AFF']='NA' # required to put NA for association analysis downstream or miscalculates and fails
 				pheno_Genesis[['IID', 'AFF']].to_csv(phenoFile_Genesis.name, sep='\t', index=False, header=False) # format it FID <tab> IID <new line>
 
 				step_order.pop(0)
